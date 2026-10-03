@@ -17,7 +17,8 @@
         <div class="page-content">
             <div class="panel panel-info">
                 <div class="panel-heading">
-                    <h3 class="panel-title">{{ $docLabel }} · {{ class_basename($approval->approvable_type) }} #{{ $approval->approvable_id }}
+                    <h3 class="panel-title">{{ $docLabel }} · {{ $document['label'] ?? (class_basename($approval->approvable_type).' #'.$approval->approvable_id) }}
+                        @if (! empty($document['url'])) <a href="{{ $document['url'] }}" target="_blank" class="btn btn-xs btn-info"><i class="la la-external-link"></i> Open document</a> @endif
                         <span class="badge badge-{{ ['pending' => 'warning', 'approved' => 'success', 'rejected' => 'danger', 'returned' => 'info', 'recalled' => 'secondary'][$approval->status] }}">{{ ucfirst($approval->status) }}</span>
                         @if ($approval->revision) <small>revision {{ $approval->revision }}</small> @endif
                     </h3>

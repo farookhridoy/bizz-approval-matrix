@@ -9,6 +9,7 @@ use Bizzsol\ApprovalMatrix\Exceptions\ApprovalException;
 use Bizzsol\ApprovalMatrix\Models\ApprovalAction;
 use Bizzsol\ApprovalMatrix\Models\ApprovalRequest;
 use Bizzsol\ApprovalMatrix\Services\ApprovalEngine;
+use Bizzsol\ApprovalMatrix\Support\DocumentLinks;
 use Yajra\DataTables\DataTables;
 
 class InboxController extends Controller
@@ -26,13 +27,21 @@ class InboxController extends Controller
 
             return DataTables::of($query)
                 ->addIndexColumn()
-                ->addColumn('document', fn ($r) => e(($docs[$r->document_type]['label'] ?? $r->document_type).' · '.class_basename($r->approvable_type).' #'.$r->approvable_id))
+                ->addColumn('document', function ($r) use ($docs) {
+                    $d = DocumentLinks::describe($r);
+                    $type = e($docs[$r->document_type]['label'] ?? $r->document_type);
+                    if (! $d) {
+                        return $type.' · '.e(class_basename($r->approvable_type)).' #'.$r->approvable_id;
+                    }
+
+                    return $type.' · '.($d['url'] ? '<a href="'.e($d['url']).'" target="_blank">'.e($d['label']).'</a>' : e($d['label']));
+                })
                 ->addColumn('requester', fn ($r) => e($names[$r->requested_by] ?? '—'))
                 ->editColumn('amount', fn ($r) => $r->amount !== null ? number_format($r->amount, 2) : '—')
                 ->addColumn('step', fn ($r) => e($r->stepAt((int) $r->current_level)['name'] ?? ('Level '.$r->current_level)))
                 ->addColumn('submitted', fn ($r) => $r->created_at->format('Y-m-d H:i'))
                 ->addColumn('actions', fn ($r) => '<a href="'.route('approval-matrix.inbox.show', $r->id).'" class="btn btn-xs btn-primary"><i class="la la-eye"></i> Review</a>')
-                ->rawColumns(['actions'])
+                ->rawColumns(['document', 'actions'])
                 ->make(true);
         }
 
@@ -66,6 +75,7 @@ class InboxController extends Controller
             'approval' => $approval,
             'names' => User::pluck('name', 'id'),
             'docLabel' => config('approvalmatrix.document_types')[$approval->document_type]['label'] ?? $approval->document_type,
+            'document' => DocumentLinks::describe($approval),
             'canAct' => $mine,
             'canRecall' => $approval->status === ApprovalRequest::PENDING && $approval->requested_by === $uid,
         ]);

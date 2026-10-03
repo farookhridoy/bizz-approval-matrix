@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Bizzsol\ApprovalMatrix\Http\Controllers\InboxController;
 use Bizzsol\ApprovalMatrix\Http\Controllers\OrgController;
 use Bizzsol\ApprovalMatrix\Http\Controllers\SimulatorController;
 use Bizzsol\ApprovalMatrix\Http\Controllers\WorkflowController;
@@ -25,12 +24,6 @@ Route::group(['prefix' => 'approval-matrix', 'as' => 'approval-matrix.', 'middle
     Route::get('simulator', [SimulatorController::class, 'index'])->name('simulator.index')
         ->middleware('permission:approval-matrix-simulator');
 
-    // Approver inbox: every route is further restricted to the assigned approver inside the engine.
-    Route::group(['prefix' => 'inbox', 'as' => 'inbox.', 'middleware' => 'permission:approval-inbox'], function () {
-        Route::get('/', [InboxController::class, 'index'])->name('index');
-        Route::get('{id}', [InboxController::class, 'show'])->name('show');
-        Route::post('{id}/approve', [InboxController::class, 'approve'])->name('approve');
-        Route::post('{id}/reject', [InboxController::class, 'reject'])->name('reject');
-        Route::post('{id}/recall', [InboxController::class, 'recall'])->name('recall');
-    });
 });
+
+require __DIR__.'/inbox.php';

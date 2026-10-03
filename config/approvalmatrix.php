@@ -9,6 +9,7 @@ return [
      * Defaults are off so a consuming app gets the services only.
      */
     'admin_ui' => env('APPROVAL_MATRIX_ADMIN_UI', false),
+    'inbox_ui' => env('APPROVAL_MATRIX_INBOX_UI', false), // host only the approver inbox (no builder/simulator); ignored when admin_ui is on
     'load_migrations' => env('APPROVAL_MATRIX_MIGRATIONS', false),
 
     'modules' => ['core', 'procurement', 'finance', 'hrms', 'production', 'pmd'],

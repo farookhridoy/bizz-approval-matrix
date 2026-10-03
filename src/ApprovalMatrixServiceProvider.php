@@ -22,8 +22,12 @@ class ApprovalMatrixServiceProvider extends ServiceProvider
         }
 
         // Only the app that hosts the admin screens registers routes; consumers use the services only.
-        if (config('approvalmatrix.admin_ui') && ! $this->app->routesAreCached()) {
-            Route::middleware('web')->group(__DIR__.'/../routes/web.php');
+        if (! $this->app->routesAreCached()) {
+            if (config('approvalmatrix.admin_ui')) {
+                Route::middleware('web')->group(__DIR__.'/../routes/web.php'); // builder, simulator, org feeds + inbox
+            } elseif (config('approvalmatrix.inbox_ui')) {
+                Route::middleware('web')->group(__DIR__.'/../routes/inbox.php'); // approver inbox only
+            }
         }
 
         if ($this->app->runningInConsole()) {
