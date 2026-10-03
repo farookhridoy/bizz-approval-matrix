@@ -273,8 +273,8 @@ class OrgCascadeTest extends ApprovalTestCase
         $masterName = DB::table('master_departments')->where('id', $f['master'])->value('name');
 
         $rows = $this->actingAs($admin)->get(route('approval-matrix.workflows.index', ['draw' => 1]), ['X-Requested-With' => 'XMLHttpRequest'])->json('data');
-        $row = collect($rows)->firstWhere('name', 'Scoped');
-        $this->assertStringContainsString($masterName, $row['scope']);
+        $row = collect($rows)->first(fn ($r) => str_contains($r['workflow'], 'Scoped'));
+        $this->assertStringContainsString($masterName, $row['applies_to']);
 
         $this->actingAs($admin)->get(route('approval-matrix.workflows.edit', $wf->id))
             ->assertOk()->assertSee('am-master', false)->assertSee('selected', false)->assertSee($masterName);

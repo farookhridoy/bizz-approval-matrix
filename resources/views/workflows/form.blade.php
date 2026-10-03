@@ -2,6 +2,24 @@
 
 @section('title', session()->get('system-information')['name']. ' | '.$title)
 
+@section('page-css')
+    @include('approvalmatrix::partials.ui')
+    <style>
+    .am-step-card{border:1px solid var(--am-line);border-radius:12px;margin-bottom:12px;background:#fff;overflow:hidden}
+    .am-step-card>.sh{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--am-bg);cursor:pointer}
+    .am-step-card .sh .am-dot{width:28px;height:28px;font-size:12px}
+    .am-step-card .sh .t{flex:1;min-width:0}.am-step-card .sh .t b{display:block}
+    .am-step-card .sh .t small{color:var(--am-muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .am-step-card .sh .btn{padding:2px 7px}
+    .am-step-card.collapsed>.sb{display:none}
+    .am-step-card>.sb{padding:16px 18px;border-top:1px solid var(--am-line)}
+    .am-step-card label{font-size:12px;font-weight:600;color:var(--am-muted);margin-bottom:3px}
+    .am-sub{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--am-muted);font-weight:600;margin:4px 0 8px}
+    .am-preview{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;padding:10px 14px;border:1px dashed var(--am-line);border-radius:10px;background:#fff}
+    .am-form label{font-size:12px;font-weight:600;color:var(--am-muted);margin-bottom:3px}
+    </style>
+@endsection
+
 @section('main-content')
 <div class="main-content">
     <div class="main-content-inner">
@@ -16,9 +34,10 @@
             </ul>
         </div>
 
-        <div class="page-content">
+        <div class="page-content am am-form">
+            <div class="am-head"><div><h2>{{ $workflow ? 'Edit workflow' : 'New workflow' }}</h2><p>Decide who approves, and for which requests. The most specific active workflow wins.</p></div></div>
             @if ($errors->any())
-                <div class="alert alert-danger"><ul class="mb-0">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
+                <div class="am-note bad"><i class="las la-exclamation-circle"></i><ul class="mb-0">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
             @endif
 
             <form method="post" action="{{ $workflow ? route('approval-matrix.workflows.update', $workflow->id) : route('approval-matrix.workflows.store') }}">
@@ -26,15 +45,15 @@
                 @if ($workflow) @method('PUT') @endif
 
                 @if ($workflow && \Bizzsol\ApprovalMatrix\Models\ApprovalRequest::where('workflow_id', $workflow->id)->exists())
-                    <div class="alert alert-warning">This workflow already has approval requests. Saving creates <strong>version {{ $workflow->version + 1 }}</strong>; the current version and its history stay untouched.</div>
+                    <div class="am-note warn"><i class="las la-code-branch"></i><div>This workflow already has approval requests. Saving creates <strong>version {{ $workflow->version + 1 }}</strong>; the current version and its history stay untouched.</div></div>
                 @endif
 
                 @php($c = $workflow->conditions ?? [])
                 @php($attrText = collect($c['attributes'] ?? [])->map(fn ($v, $k) => $k.'='.implode(',', $v))->implode("\n"))
 
-                <div class="panel panel-info">
-                    <div class="panel-heading"><h3 class="panel-title">1. What and where</h3></div>
-                    <div class="panel-body">
+                <div class="am-card">
+                    <div class="am-card-h"><h3>1 · What it approves</h3><small>name, document and priority</small></div>
+                    <div class="am-card-b">
                         <div class="form-group row">
                             <div class="col-md-4">
                                 <label><strong>Name <span class="text-danger">*</span></strong></label>
@@ -50,17 +69,18 @@
                             </div>
                             <div class="col-md-2">
                                 <label><strong>State</strong></label>
-                                <select name="state" class="form-control">
-                                    @foreach (['draft', 'active', 'archived'] as $s)
-                                        <option value="{{ $s }}" @selected(old('state', $workflow->state ?? 'draft') === $s)>{{ ucfirst($s) }}</option>
+                                <div class="am-seg" style="display:flex">
+                                    @foreach (['draft' => 'Draft', 'active' => 'Active', 'archived' => 'Archived'] as $s => $lbl)
+                                        <label style="flex:1;justify-content:center;padding:7px 6px"><input type="radio" name="state" value="{{ $s }}" @checked(old('state', $workflow->state ?? 'draft') === $s)><span>{{ $lbl }}</span></label>
                                     @endforeach
-                                </select>
+                                </div>
                             </div>
                             <div class="col-md-2">
                                 <label><strong>Priority</strong></label>
                                 <input type="number" min="0" name="priority" class="form-control" value="{{ old('priority', $workflow->priority ?? 0) }}" title="Higher wins when scope is equal">
                             </div>
                         </div>
+                        <hr style="margin:16px 0"><div class="am-sub">Applies to — leave blank for everyone</div>
                         <div class="form-group row">
                             <div class="col-md-4">
                                 <label><strong>Company</strong></label>
@@ -88,6 +108,7 @@
                                 @endif
                             </div>
                         </div>
+                        <hr style="margin:16px 0"><div class="am-sub">Only when… (optional conditions)</div>
                         <div class="form-group row">
                             <div class="col-md-2">
                                 <label><strong>Amount from</strong></label>
@@ -113,34 +134,41 @@
                     </div>
                 </div>
 
-                <div class="panel panel-info">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">2. Approval steps <small>(run top to bottom)</small></h3>
-                    </div>
-                    <div class="panel-body">
+                <div class="am-card">
+                    <div class="am-card-h"><h3>2 · Approval steps</h3><small>run top to bottom · click a step to expand</small></div>
+                    <div class="am-card-b">
+                        <div class="am-preview" id="chain-preview"></div>
                         <div id="steps"></div>
                         <button type="button" class="btn btn-sm btn-primary" id="add-step"><i class="la la-plus"></i> Add step</button>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-success rounded"><i class="la la-check"></i> Save workflow</button>
+                <div class="am-actionbar">
+                    <span class="text-muted" style="font-size:13px">Drafts never apply to real requests until set to Active.</span>
+                    <span><a href="{{ route('approval-matrix.workflows.index') }}" class="btn btn-default">Cancel</a> <button type="submit" class="btn btn-primary"><i class="la la-check"></i> Save workflow</button></span>
+                </div>
             </form>
         </div>
     </div>
 </div>
 
-{{-- Templates --}}
-<template id="step-tpl">
-    <div class="panel panel-default step" style="border:1px solid #ddd;margin-bottom:12px">
-        <div class="panel-heading" style="padding:8px 12px;background:#f5f5f5">
-            <strong class="step-title">Step</strong>
-            <span class="pull-right">
+<datalist id="perm-list">@foreach ($permissions as $p)<option value="{{ $p }}">@endforeach</datalist>
+@endsection
+
+@section('page-script')
+@include('approvalmatrix::partials.cascade')
+<script type="text/html" id="step-tpl">
+    <div class="am-step-card step">
+        <div class="sh">
+            <span class="am-dot step-no">1</span>
+            <span class="t"><b class="step-title">Step</b><small class="step-sum"></small></span>
+            <span>
                 <a class="btn btn-xs btn-default step-up" title="Move up"><i class="la la-arrow-up"></i></a>
                 <a class="btn btn-xs btn-default step-down" title="Move down"><i class="la la-arrow-down"></i></a>
                 <a class="btn btn-xs btn-danger step-del" title="Remove"><i class="la la-trash"></i></a>
             </span>
         </div>
-        <div class="panel-body">
+        <div class="sb">
             <div class="form-group row">
                 <div class="col-md-3"><label>Step name</label><input type="text" class="form-control" data-f="name" placeholder="Department head"></div>
                 <div class="col-md-2"><label>Stage key</label><input type="text" class="form-control" data-f="stage_key" placeholder="dept_head"></div>
@@ -171,7 +199,8 @@
                 <table class="table table-condensed table-bordered"><thead><tr><th>Unit</th><th>Department</th><th>User</th><th style="width:40px"></th></tr></thead><tbody class="custom-rows"></tbody></table>
                 <a class="btn btn-xs btn-default add-custom"><i class="la la-plus"></i> Add row</a>
             </div>
-            <div class="form-group row" style="margin-top:10px">
+            <div class="am-sub" style="margin-top:6px">Rules</div>
+            <div class="form-group row">
                 <div class="col-md-2"><label>Mode</label>
                     <select class="form-control" data-f="mode"><option value="any">Any one approves</option><option value="all">All must approve</option><option value="n_of_m">N of the group</option></select></div>
                 <div class="col-md-2 n-wrap" style="display:none"><label>N required</label><input type="number" min="1" class="form-control" data-f="min_approvals"></div>
@@ -186,22 +215,15 @@
             </div>
         </div>
     </div>
-</template>
-
-<template id="custom-row-tpl">
+</script>
+<script type="text/html" id="custom-row-tpl">
     <tr>
         <td><select class="form-control input-sm" data-c="unit_id"><option value="">Any unit</option>@foreach ($allUnitRows as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach</select></td>
         <td><select class="form-control input-sm" data-c="master_department_id" data-placeholder="Any department"><option value="">Any department</option>@foreach ($allMasters as $id => $n)<option value="{{ $id }}">{{ $n }}</option>@endforeach</select></td>
         <td><select class="form-control input-sm" data-c="user_id"><option value="">— user —</option>@foreach ($users as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach</select></td>
         <td><a class="btn btn-xs btn-danger del-custom"><i class="la la-times"></i></a></td>
     </tr>
-</template>
-
-<datalist id="perm-list">@foreach ($permissions as $p)<option value="{{ $p }}">@endforeach</datalist>
-@endsection
-
-@section('page-script')
-@include('approvalmatrix::partials.cascade')
+</script>
 <script>
 $(function () {
     var initial = @json($stepsData);
@@ -210,7 +232,8 @@ $(function () {
     function reindex() {
         $steps.children('.step').each(function (i) {
             var $s = $(this);
-            $s.find('.step-title').text('Step ' + (i + 1));
+            $s.find('.step-no').text(i + 1);
+            summarize($s, i);
             $s.find('[data-f]').each(function () {
                 var f = $(this).data('f');
                 var name = {approver_ref_hops: 'approver_ref', approver_ref_role: 'approver_ref', approver_ref_perm: 'approver_ref'}[f] || f;
@@ -222,6 +245,34 @@ $(function () {
                 });
             });
             toggle($s);
+        });
+        preview();
+    }
+
+    function summarize($s, i) {
+        var type = $s.find('[data-f=approver_type]');
+        var who = type.find('option:selected').text();
+        var t = type.val();
+        if (t === 'specific_user') who = $s.find('[data-f=user_id] option:selected').text();
+        if (t === 'role') who = 'Role: ' + ($s.find('[data-f=approver_ref_role]').val() || '…');
+        if (t === 'reporting_head') who = $s.find('[data-f=approver_ref_hops] option:selected').text();
+        var name = $.trim($s.find('[data-f=name]').val());
+        $s.find('.step-title').text(name || ('Step ' + (i + 1)));
+        var bits = [who];
+        var m = $s.find('[data-f=mode]').val();
+        if (m === 'all') bits.push('all must approve');
+        if (m === 'n_of_m') bits.push($s.find('[data-f=min_approvals]').val() + ' of group');
+        if ($s.find('[data-f=can_finish]').prop('checked')) bits.push('can finish');
+        if (!$s.find('[data-f=is_mandatory]').prop('checked')) bits.push('optional');
+        $s.find('.step-sum').text(bits.join(' · '));
+    }
+
+    function preview() {
+        var $p = $('#chain-preview').empty(), $all = $steps.children('.step');
+        if (!$all.length) { $p.text('No steps yet.'); return; }
+        $all.each(function (i) {
+            if (i) $p.append('<i class="las la-arrow-right" style="color:#9bb"></i>');
+            $p.append($('<span class="am-chip lg"></span>').text($(this).find('.step-title').text() + ' — ' + $(this).find('.step-sum').text().split(' · ')[0]));
         });
     }
 
@@ -264,6 +315,7 @@ $(function () {
         if (type === 'reporting_head') $s.find('[data-f=approver_ref_hops]').val(data.approver_ref || 1);
         if (type === 'role') $s.find('[data-f=approver_ref_role]').val(data.approver_ref || '');
         if (type === 'permission') $s.find('[data-f=approver_ref_perm]').val(data.approver_ref || '');
+        if (initial.length > 3) $s.addClass('collapsed');
         $steps.append($s);
         $.each(data.custom || [], function (_, r) { addCustom($s, r); });
         if (type === 'custom_user' && !(data.custom || []).length) addCustom($s);
@@ -284,7 +336,8 @@ $(function () {
         if ($(this).val() === 'custom_user' && !$s.find('.custom-rows tr').length) addCustom($s);
         reindex();
     });
-    $steps.on('change', '[data-f=mode]', reindex);
+    $steps.on('change input', '[data-f]', reindex);
+    $steps.on('click', '.sh', function (e) { if (!$(e.target).closest('a,button').length) $(this).closest('.step').toggleClass('collapsed'); });
     $steps.on('click', '.add-custom', function () { addCustom($(this).closest('.step')); });
     $steps.on('click', '.del-custom', function () { $(this).closest('tr').remove(); reindex(); });
     $steps.on('click', '.step-del', function () { if ($steps.children('.step').length > 1) { $(this).closest('.step').remove(); reindex(); } });
