@@ -2,6 +2,10 @@
 
 @section('title', session()->get('system-information')['name']. ' | '.$title)
 
+@section('page-script')
+<script>$(function () { var $ = window.jQuery; if ($.fn.select2) $('select[name=delegate_id], select[name=document_type]').select2({width: '100%'}); });</script>
+@endsection
+
 @section('page-css')
     @include('approvalmatrix::partials.ui')
 @endsection

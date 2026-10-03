@@ -58,6 +58,29 @@ class OrgDirectory
             ->orderBy('m.name')->pluck('m.name', 'm.id');
     }
 
+    /**
+     * Users whose employee record sits in the given company / unit / master department
+     * (hrms_employee_users -> hrms_employees.main_company_id / main_unit_id / main_department_id).
+     * With no filter, every user. @return Collection<int,object{id:int,name:string}>
+     */
+    public function users(?int $companyId = null, ?int $unitId = null, ?int $masterDepartmentId = null): Collection
+    {
+        $q = DB::table('users as u')->whereNull('u.deleted_at');
+        if ($companyId || $unitId || $masterDepartmentId) {
+            $q->whereIn('u.id', function ($sub) use ($companyId, $unitId, $masterDepartmentId) {
+                $sub->select('eu.user_id')->from('hrms_employee_users as eu')
+                    ->join('hrms_employees as e', 'e.id', '=', 'eu.employee_id')
+                    ->whereNull('eu.deleted_at')->whereNull('e.deleted_at')
+                    ->when($companyId, fn ($s) => $s->where('e.main_company_id', $companyId))
+                    ->when($unitId, fn ($s) => $s->where('e.main_unit_id', $unitId))
+                    ->when($masterDepartmentId, fn ($s) => $s->whereIn('e.main_department_id',
+                        DB::table('hr_department')->where('master_department_id', $masterDepartmentId)->select('id')));
+            });
+        }
+
+        return $q->orderBy('u.name')->get(['u.id', 'u.name']);
+    }
+
     public function companyOfUnit(int $unitId): ?int
     {
         $c = DB::table('hr_unit')->where('id', $unitId)->value('company_id');

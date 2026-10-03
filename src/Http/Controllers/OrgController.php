@@ -23,6 +23,15 @@ class OrgController extends Controller
         return $this->options($this->org->masterDepartments($request->integer('unit_id') ?: null, $request->integer('company_id') ?: null));
     }
 
+    public function users(Request $request)
+    {
+        return response()->json($this->org->users(
+            $request->integer('company_id') ?: null,
+            $request->integer('unit_id') ?: null,
+            $request->integer('master_department_id') ?: null,
+        )->values());
+    }
+
     private function options($collection)
     {
         return response()->json($collection->map(fn ($name, $id) => ['id' => $id, 'name' => $name])->values());

@@ -32,17 +32,17 @@
                                 <select name="document_type" class="form-control" required>
                                     @foreach ($documentTypes as $key => $d)<option value="{{ $key }}" @selected(request('document_type') === $key)>{{ ucfirst($d['module']) }} › {{ $d['label'] }}</option>@endforeach
                                 </select></div>
-                            <div class="col-md-3"><label><strong>Requester</strong> <small class="text-muted">fills org &amp; resolves reporting head</small></label>
+                            <div class="col-md-3"><label><strong>Requester</strong></label>
                                 <select name="requester_id" class="form-control"><option value="">— none —</option>
                                     @foreach ($users as $u)<option value="{{ $u->id }}" @selected(request('requester_id') == $u->id)>{{ $u->name }}</option>@endforeach
-                                </select></div>
+                                </select><small class="am-help">Pick who is asking: their company, unit and department are used and their reporting head is looked up. The list narrows to the company / unit / department chosen below.</small></div>
                             <div class="col-md-2"><label><strong>Amount</strong></label>
-                                <input type="number" step="0.01" min="0" name="amount" class="form-control" value="{{ request('amount') }}"></div>
+                                <input type="number" step="0.01" min="0" name="amount" class="form-control" value="{{ request('amount') }}"><small class="am-help">Request value, to test amount-based workflows.</small></div>
                             <div class="col-md-4"><label><strong>Attributes</strong> <small class="text-muted">key=value per line</small></label>
-                                <textarea name="attributes" rows="1" class="form-control">{{ request('attributes') }}</textarea></div>
+                                <textarea name="attributes" rows="1" class="form-control">{{ request('attributes') }}</textarea><small class="am-help">Optional facts, e.g. <code>purchase_type=foreign</code>.</small></div>
                         </div>
                         <div class="form-group row">
-                            <div class="col-md-4"><label><strong>Company</strong> <small class="text-muted">overrides requester</small></label>
+                            <div class="col-md-4"><label><strong>Company</strong> <small class="text-muted">optional — overrides the requester's</small></label>
                                 <select name="company_id" id="am-company" class="form-control"><option value="">— from requester —</option>
                                     @foreach ($companies as $id => $n)<option value="{{ $id }}" @selected(request('company_id') == $id)>{{ $n }}</option>@endforeach
                                 </select></div>
@@ -108,5 +108,13 @@
 
 @section('page-script')
 @include('approvalmatrix::partials.cascade')
-<script>$(function () { amOrg.bind($('#am-company'), $('#am-unit'), $('#am-master')); });</script>
+<script>$(function () {
+    amOrg.bind($('#am-company'), $('#am-unit'), $('#am-master'));
+    amOrg.s2($('select'));
+    // requester list follows the chosen company / unit / department
+    var $req = $('[name=requester_id]').attr('data-userpick', 1);
+    $('#am-company, #am-unit, #am-master').on('change', function () {
+        setTimeout(function () { amOrg.loadUsers($req, {company: $('#am-company').val(), unit: $('#am-unit').val(), master: $('#am-master').val()}); }, 60);
+    });
+});</script>
 @endsection

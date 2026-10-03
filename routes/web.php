@@ -23,6 +23,9 @@ Route::group(['prefix' => 'approval-matrix', 'as' => 'approval-matrix.', 'middle
     Route::get('org/master-departments', [OrgController::class, 'masterDepartments'])->name('org.master-departments')
         ->middleware('permission:approval-matrix-index|approval-matrix-create|approval-matrix-edit|approval-matrix-simulator');
 
+    Route::get('org/users', [OrgController::class, 'users'])->name('org.users')
+        ->middleware('permission:approval-matrix-index|approval-matrix-create|approval-matrix-edit|approval-matrix-simulator');
+
     // Does every requester have a workflow + approvers? (run before activating)
     Route::get('coverage', [CoverageController::class, 'index'])->name('coverage.index')
         ->middleware('permission:approval-matrix-simulator');

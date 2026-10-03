@@ -2,6 +2,10 @@
 
 @section('title', session()->get('system-information')['name']. ' | '.$title)
 
+@section('page-script')
+<script>$(function () { if ($.fn.select2) $('select[name=document_type]').select2({width: '340px'}); });</script>
+@endsection
+
 @section('page-css')
     @include('approvalmatrix::partials.ui')
 @endsection
@@ -24,7 +28,7 @@
             <div class="am-card">
                 <div class="am-card-b">
                     <form method="get" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                        <select name="document_type" class="form-control" style="flex:1;min-width:240px;width:auto" required>
+                        <select name="document_type" class="form-control" style="width:340px" required>
                             <option value="">— document —</option>
                             @foreach ($documentTypes as $key => $d)<option value="{{ $key }}" @selected(request('document_type') === $key)>{{ ucfirst($d['module']) }} › {{ $d['label'] }}</option>@endforeach
                         </select>

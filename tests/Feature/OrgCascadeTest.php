@@ -280,6 +280,24 @@ class OrgCascadeTest extends ApprovalTestCase
             ->assertOk()->assertSee('am-master', false)->assertSee('selected', false)->assertSee($masterName);
     }
 
+    public function test_users_feed_is_limited_to_the_unit_and_department(): void
+    {
+        $f = $this->fixture();
+        $admin = $this->admin();
+        $inA = $this->makeUser('in_unit_a');
+        $inB = $this->makeUser('in_unit_b');
+        $this->makeEmployee($inA, null, ['company_id' => $f['companyA'], 'unit_id' => $f['unitA'], 'department_id' => $f['deptA']]);
+        $this->makeEmployee($inB, null, ['unit_id' => $f['unitB'], 'department_id' => $f['deptB']]);
+
+        $url = route('approval-matrix.org.users');
+        $ids = fn (array $q) => collect($this->actingAs($admin)->getJson($url.'?'.http_build_query($q))->assertOk()->json())->pluck('id');
+
+        $this->assertTrue($ids(['unit_id' => $f['unitA']])->contains($inA->id));
+        $this->assertFalse($ids(['unit_id' => $f['unitA']])->contains($inB->id));
+        $this->assertTrue($ids(['unit_id' => $f['unitB'], 'master_department_id' => $f['master']])->contains($inB->id));
+        $this->assertTrue($ids([])->contains($inA->id) && $ids([])->contains($inB->id));
+    }
+
     public function test_simulator_page_cascades_and_resolves_for_a_master_department(): void
     {
         $f = $this->fixture();
