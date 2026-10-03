@@ -42,7 +42,7 @@ class WorkflowService
             throw ValidationException::withMessages(['document_type' => 'Unknown document type.']);
         }
         [$companyId, $unitId, $masterId] = $this->validatedScope($data);
-        $steps = $this->validatedSteps($data['steps'] ?? []);
+        $steps = $this->validatedSteps($data['steps'] ?? [], $documentTypes[$docType]);
         $state = $data['state'] ?? ApprovalWorkflow::STATE_DRAFT;
         if (! in_array($state, [ApprovalWorkflow::STATE_DRAFT, ApprovalWorkflow::STATE_ACTIVE, ApprovalWorkflow::STATE_ARCHIVED], true)) {
             throw ValidationException::withMessages(['state' => 'Invalid state.']);
@@ -192,7 +192,8 @@ class WorkflowService
         return $c ?: null;
     }
 
-    private function validatedSteps(array $rows): array
+    /** @param  array  $docType  config entry; optional rules: `modes` (allowed step modes), `allow_finish` (false forbids can_finish) */
+    private function validatedSteps(array $rows, array $docType = []): array
     {
         $rows = array_values(array_filter($rows, fn ($r) => ! empty($r['approver_type'])));
         if (! $rows) {
@@ -204,6 +205,13 @@ class WorkflowService
             $fail = fn ($msg) => throw ValidationException::withMessages(['steps' => "Step {$n}: {$msg}"]);
             $type = $r['approver_type'];
 
+            $allowedModes = $docType['modes'] ?? null;
+            if ($allowedModes && ! in_array($r['mode'] ?? 'any', $allowedModes, true)) {
+                $fail('this document type only supports the approval mode(s): '.implode(', ', $allowedModes).'.');
+            }
+            if (($docType['allow_finish'] ?? true) === false && ! empty($r['can_finish'])) {
+                $fail('"Approver may finish here" is not available for this document type.');
+            }
             if (! isset(self::APPROVER_TYPES[$type])) {
                 $fail('unknown approver type.');
             }

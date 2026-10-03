@@ -18,6 +18,9 @@ class ApprovalAction extends Model
 
     public const RECALLED = 'recalled';
 
+    /** Approval inherited from the previous revision of the same document (resubmission after rejection). */
+    public const CARRIED = 'carried';
+
     protected $table = 'approval_actions';
 
     protected $guarded = [];

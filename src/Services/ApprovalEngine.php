@@ -51,10 +51,15 @@ class ApprovalEngine
     /**
      * Submit a document. Throws ApprovalException when no workflow matches (callers decide whether
      * to fall back to legacy behaviour) and NoApproverException when a mandatory step has nobody.
+     *
+     * @param  bool  $resume  re-submitting after a rejection: when the previous request ran on the same workflow
+     *                        version, the levels below the one that rejected are carried over as already approved
+     *                        and the new request starts at the rejecting level (e.g. a revised CS goes straight
+     *                        back to the approver who rejected it). Otherwise the chain starts from the top.
      */
-    public function submit(Model $approvable, int $requesterId, string $documentType, array $override = []): ApprovalRequest
+    public function submit(Model $approvable, int $requesterId, string $documentType, array $override = [], bool $resume = false): ApprovalRequest
     {
-        return DB::transaction(function () use ($approvable, $requesterId, $documentType, $override) {
+        return DB::transaction(function () use ($approvable, $requesterId, $documentType, $override, $resume) {
             $ctx = $this->context($approvable, $requesterId, $override);
 
             $open = ApprovalRequest::where('approvable_type', $approvable->getMorphClass())
@@ -108,10 +113,48 @@ class ApprovalEngine
                 'amount' => $ctx['amount'] ?? null,
             ]);
 
-            $this->activateNext($request, null, $ctx);
+            $afterLevel = $resume ? $this->carryOver($request, $approvable, $workflow) : null;
+            $this->activateNext($request, $afterLevel, $ctx);
 
             return $request->refresh();
         });
+    }
+
+    /**
+     * Resume support: copy the approvals of the levels below the rejecting level from the previous request.
+     *
+     * @return int|null the last carried level (the new request continues after it), null for a fresh start
+     */
+    private function carryOver(ApprovalRequest $request, Model $approvable, ApprovalWorkflow $workflow): ?int
+    {
+        $previous = ApprovalRequest::where('approvable_type', $approvable->getMorphClass())
+            ->where('approvable_id', $approvable->getKey())
+            ->where('id', '!=', $request->id)
+            ->whereIn('status', [ApprovalRequest::REJECTED, ApprovalRequest::RETURNED])
+            ->latest('id')->first();
+
+        if (! $previous || (int) $previous->workflow_id !== (int) $workflow->id
+            || (int) $previous->workflow_version !== (int) $workflow->version || ! $previous->current_level) {
+            return null;
+        }
+
+        $carried = null;
+        foreach (collect($request->steps_snapshot)->pluck('level')->map(fn ($l) => (int) $l)->sort() as $level) {
+            if ($level >= (int) $previous->current_level) {
+                break;
+            }
+            $approvals = $previous->actions()->where('level', $level)->where('action', ApprovalAction::APPROVED)->get();
+            foreach ($approvals as $a) {
+                ApprovalAction::create([
+                    'request_id' => $request->id, 'level' => $level, 'step_id' => $a->step_id, 'assigned_to' => $a->assigned_to,
+                    'acted_by' => $a->acted_by, 'action' => ApprovalAction::CARRIED, 'acted_at' => $a->acted_at,
+                    'comments' => 'carried over from revision '.$previous->revision,
+                ]);
+            }
+            $carried = $level;
+        }
+
+        return $carried;
     }
 
     /**

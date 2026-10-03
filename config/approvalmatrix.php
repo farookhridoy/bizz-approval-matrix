@@ -19,7 +19,9 @@ return [
      */
     'document_types' => [
         'procurement.requisition' => ['module' => 'procurement', 'label' => 'Requisition'],
-        'procurement.cs' => ['module' => 'procurement', 'label' => 'Comparative Statement'],
+        // CS approval keeps the legacy rule that every approver of a level must approve, so only mode "all"
+        // (a one-person level is the same thing) and no early finish are allowed.
+        'procurement.cs' => ['module' => 'procurement', 'label' => 'Comparative Statement', 'modes' => ['all'], 'allow_finish' => false],
         'procurement.purchase_order' => ['module' => 'procurement', 'label' => 'Purchase Order'],
     ],
 ];
