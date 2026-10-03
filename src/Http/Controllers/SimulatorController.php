@@ -15,7 +15,7 @@ class SimulatorController extends Controller
     {
         $result = null;
         $forced = $request->filled('workflow_id') ? \Bizzsol\ApprovalMatrix\Models\ApprovalWorkflow::find($request->input('workflow_id')) : null;
-        if ($forced && ! $request->filled('document_type')) {
+        if ($forced) {
             $request->merge(['document_type' => $forced->document_type]);
         }
         if ($request->filled('document_type')) {
