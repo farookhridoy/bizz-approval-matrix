@@ -12,7 +12,7 @@ return [
     'inbox_ui' => env('APPROVAL_MATRIX_INBOX_UI', false), // host only the approver inbox (no builder/simulator); ignored when admin_ui is on
     'load_migrations' => env('APPROVAL_MATRIX_MIGRATIONS', false),
 
-    'modules' => ['core', 'procurement', 'finance', 'hrms', 'production', 'pmd'],
+    'modules' => ['core', 'procurement', 'inventory', 'finance', 'hrms', 'production', 'pmd'],
 
     /*
      * Approvable document types, keyed `<module>.<document>`. Host apps may add their own by
@@ -26,5 +26,7 @@ return [
         'procurement.purchase_order' => ['module' => 'procurement', 'label' => 'Purchase Order'],
         // Cash approval of direct-purchase POs (releases the PO to be sent). No early finish: every level must approve.
         'procurement.po_cash' => ['module' => 'procurement', 'label' => 'PO Cash Approval', 'allow_finish' => false],
+        // Stock adjustments (write-offs / gains). The last approval posts it to inventory and finance, so no early finish.
+        'inventory.adjustment' => ['module' => 'inventory', 'label' => 'Inventory Adjustment', 'allow_finish' => false],
     ],
 ];
