@@ -101,6 +101,7 @@ class ApprovalEngine
                     'min_approvals' => $s->min_approvals,
                     'is_mandatory' => (bool) $s->is_mandatory,
                     'can_finish' => (bool) $s->can_finish,
+                    'sla_hours' => $s->sla_hours,
                     'skip_condition' => $s->skip_condition,
                     'on_reject' => $s->on_reject,
                     'custom_users' => $s->customUsers->map(fn ($u) => $u->only(['unit_id', 'department_id', 'master_department_id', 'user_id']))->all(),

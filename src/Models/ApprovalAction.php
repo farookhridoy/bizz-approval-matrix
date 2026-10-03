@@ -25,5 +25,10 @@ class ApprovalAction extends Model
 
     protected $guarded = [];
 
-    protected $casts = ['acted_at' => 'datetime'];
+    protected $casts = ['acted_at' => 'datetime', 'reminded_at' => 'datetime'];
+
+    public function request()
+    {
+        return $this->belongsTo(ApprovalRequest::class, 'request_id');
+    }
 }
