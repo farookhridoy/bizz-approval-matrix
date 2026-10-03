@@ -153,7 +153,7 @@
 
                 <div class="am-actionbar">
                     <span class="text-muted" style="font-size:13px">Drafts never apply to real requests until set to Active.</span>
-                    <span><a href="{{ route('approval-matrix.workflows.index') }}" class="btn btn-default">Cancel</a> <button type="submit" class="btn btn-primary"><i class="la la-check"></i> Save workflow</button></span>
+                    <span>@if ($workflow)<a href="{{ route('approval-matrix.simulator.index', ['document_type' => $workflow->document_type, 'workflow_id' => $workflow->id]) }}" class="btn btn-default" title="Test the saved version"><i class="las la-flask"></i> Simulate</a> @endif<a href="{{ route('approval-matrix.workflows.index') }}" class="btn btn-default">Cancel</a> <button type="submit" class="btn btn-primary"><i class="la la-check"></i> Save workflow</button></span>
                 </div>
             </form>
         </div>

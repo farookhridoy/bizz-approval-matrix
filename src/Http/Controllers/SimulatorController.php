@@ -14,6 +14,10 @@ class SimulatorController extends Controller
     public function index(Request $request, ApprovalSimulator $simulator, OrgDirectory $org)
     {
         $result = null;
+        $forced = $request->filled('workflow_id') ? \Bizzsol\ApprovalMatrix\Models\ApprovalWorkflow::find($request->input('workflow_id')) : null;
+        if ($forced && ! $request->filled('document_type')) {
+            $request->merge(['document_type' => $forced->document_type]);
+        }
         if ($request->filled('document_type')) {
             $request->validate([
                 'document_type' => 'required|in:'.implode(',', array_keys(config('approvalmatrix.document_types'))),
@@ -26,12 +30,13 @@ class SimulatorController extends Controller
                     $attrs[$k] = $v;
                 }
             }
-            $result = $simulator->simulate($request->only(['document_type', 'company_id', 'unit_id', 'master_department_id', 'amount', 'requester_id']) + ['attributes' => $attrs]);
+            $result = $simulator->simulate($request->only(['document_type', 'company_id', 'unit_id', 'master_department_id', 'amount', 'requester_id', 'workflow_id']) + ['attributes' => $attrs]);
         }
 
         return view('approvalmatrix::simulator.index', [
             'title' => 'Approval Simulator',
             'result' => $result,
+            'forced' => $forced,
             'documentTypes' => config('approvalmatrix.document_types'),
             'companies' => $org->companies(),
             'unitRows' => $org->unitRows($request->integer('company_id') ?: null),

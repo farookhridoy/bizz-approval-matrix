@@ -26,7 +26,11 @@
             <div class="am-card">
                 <div class="am-card-h"><h3>Who would approve this?</h3></div>
                 <div class="am-card-b">
+                    @if ($forced)
+                        <div class="am-note"><i class="las la-flask"></i><div>Testing <b>{{ $forced->name }}</b> v{{ $forced->version }} ({{ $forced->state }}) exactly as written, whatever its state. <a href="{{ route('approval-matrix.simulator.index', ['document_type' => $forced->document_type]) }}">Match automatically instead</a></div></div>
+                    @endif
                     <form method="get" action="{{ route('approval-matrix.simulator.index') }}">
+                        @if ($forced)<input type="hidden" name="workflow_id" value="{{ $forced->id }}">@endif
                         <div class="form-group row">
                             <div class="col-md-3"><label><strong>Document</strong></label>
                                 <select name="document_type" class="form-control" required>

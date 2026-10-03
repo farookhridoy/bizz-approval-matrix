@@ -125,7 +125,7 @@ class WorkflowController extends Controller
                 $edit = $user->can('approval-matrix-edit') ? '<a href="'.route('approval-matrix.workflows.edit', $w->id).'" class="btn btn-sm btn-primary"><i class="la la-pencil"></i> Edit</a>' : '';
                 $items = '';
                 if ($user->can('approval-matrix-simulator')) {
-                    $items .= '<a href="'.route('approval-matrix.simulator.index', ['document_type' => $w->document_type]).'"><i class="la la-project-diagram"></i> Simulate</a>';
+                    $items .= '<a href="'.route('approval-matrix.simulator.index', ['document_type' => $w->document_type, 'workflow_id' => $w->id]).'"><i class="la la-project-diagram"></i> Simulate</a>';
                 }
                 if ($user->can('approval-matrix-create')) {
                     $items .= '<a onclick="'.e($post('approval-matrix.workflows.duplicate', 'Duplicate this workflow?', 'A draft copy is created; nothing changes for running approvals.', 'Duplicate')).'"><i class="la la-copy"></i> Duplicate as draft</a>';

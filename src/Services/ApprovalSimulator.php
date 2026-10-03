@@ -3,6 +3,7 @@
 namespace Bizzsol\ApprovalMatrix\Services;
 
 use App\Models\User;
+use Bizzsol\ApprovalMatrix\Models\ApprovalWorkflow;
 
 /** "Who would approve this?" — dry run, writes nothing. */
 class ApprovalSimulator
@@ -35,14 +36,34 @@ class ApprovalSimulator
         }
 
         $candidates = $this->workflows->candidates($input['document_type'], $ctx);
-        $workflow = $candidates->first();
         $warnings = [];
         $steps = [];
+
+        // A specific workflow was asked for (e.g. a draft being tested): simulate exactly that one.
+        $forced = ! empty($input['workflow_id']) ? ApprovalWorkflow::find($input['workflow_id']) : null;
+        if ($forced) {
+            $workflow = $forced;
+            foreach (['company_id', 'unit_id', 'master_department_id'] as $k) {
+                if (empty($ctx[$k]) && ! empty($forced->{$k})) {
+                    $ctx[$k] = $forced->{$k}; // test it at the scope it is written for
+                }
+            }
+            if ($forced->state !== 'active') {
+                $warnings[] = "This workflow is {$forced->state}: real requests ignore it until you set it to Active. Showing it anyway.";
+            } elseif (! $candidates->contains('id', $forced->id)) {
+                $warnings[] = 'This workflow does not match the context below (scope, amount or conditions), so a real request would not use it.';
+            } elseif ($candidates->first()->id !== $forced->id) {
+                $warnings[] = "A more specific or higher-priority workflow (\"{$candidates->first()->name}\") would win for this context.";
+            }
+            $candidates = collect([$forced]);
+        } else {
+            $workflow = $candidates->first();
+        }
 
         if (! $workflow) {
             $warnings[] = 'No active workflow matches this document — the legacy flow (if any) would be used.';
         } else {
-            if ($candidates->count() > 1 && $candidates[1]->specificity() === $workflow->specificity() && $candidates[1]->priority === $workflow->priority) {
+            if (! $forced && $candidates->count() > 1 && $candidates[1]->specificity() === $workflow->specificity() && $candidates[1]->priority === $workflow->priority) {
                 $warnings[] = 'Two workflows tie on scope and priority; the newest version was picked. Fix the overlap.';
             }
             $snapshotSteps = $workflow->steps()->with('customUsers')->get();

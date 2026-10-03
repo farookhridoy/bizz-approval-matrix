@@ -298,6 +298,16 @@ class OrgCascadeTest extends ApprovalTestCase
         $this->assertTrue($ids([])->contains($inA->id) && $ids([])->contains($inB->id));
     }
 
+    public function test_simulator_can_test_a_specific_draft_workflow(): void
+    {
+        $admin = $this->admin();
+        $active = $this->makeWorkflow([['approver_type' => 'reporting_head']], ['name' => 'Live one', 'state' => 'active']);
+        $draft = $this->makeWorkflow([['approver_type' => 'reporting_head', 'name' => 'Draft step']], ['name' => 'My draft', 'state' => 'draft']);
+
+        $this->actingAs($admin)->get(route('approval-matrix.simulator.index', ['document_type' => self::DOC_TYPE, 'workflow_id' => $draft->id]))
+            ->assertOk()->assertSee('My draft')->assertSee('Draft step')->assertSee('real requests ignore it until you set it to Active');
+    }
+
     public function test_simulator_page_cascades_and_resolves_for_a_master_department(): void
     {
         $f = $this->fixture();
