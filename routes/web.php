@@ -10,6 +10,8 @@ Route::group(['prefix' => 'approval-matrix', 'as' => 'approval-matrix.', 'middle
     // Workflow builder (ACL > Approval Matrix)
     Route::resource('workflows', WorkflowController::class)->except(['show'])
         ->middleware('permission:approval-matrix-index|approval-matrix-create|approval-matrix-edit|approval-matrix-delete');
+    Route::post('workflows/{id}/duplicate', [WorkflowController::class, 'duplicate'])->name('workflows.duplicate')
+        ->middleware('permission:approval-matrix-create');
     Route::post('workflows/{id}/activate', [WorkflowController::class, 'activate'])->name('workflows.activate')
         ->middleware('permission:approval-matrix-edit');
     Route::post('workflows/{id}/archive', [WorkflowController::class, 'archive'])->name('workflows.archive')

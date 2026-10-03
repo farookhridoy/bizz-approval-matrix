@@ -96,6 +96,29 @@ class WorkflowService
         });
     }
 
+    /** A draft copy of a workflow (same scope, conditions and steps incl. custom approvers) to adapt for another unit/document. */
+    public function duplicate(ApprovalWorkflow $workflow, ?int $userId = null): ApprovalWorkflow
+    {
+        return DB::transaction(function () use ($workflow, $userId) {
+            $copy = $workflow->replicate(['parent_id', 'created_at', 'updated_at', 'deleted_at']);
+            $copy->fill(['name' => 'Copy of '.$workflow->name, 'state' => ApprovalWorkflow::STATE_DRAFT, 'version' => 1, 'created_by' => $userId, 'updated_by' => $userId]);
+            $copy->save();
+
+            foreach ($workflow->steps()->with('customUsers')->get() as $step) {
+                $newStep = $step->replicate(['created_at', 'updated_at']);
+                $newStep->workflow_id = $copy->id;
+                $newStep->save();
+                foreach ($step->customUsers as $u) {
+                    $newUser = $u->replicate(['created_at', 'updated_at']);
+                    $newUser->step_id = $newStep->id;
+                    $newUser->save();
+                }
+            }
+
+            return $copy;
+        });
+    }
+
     public function activate(ApprovalWorkflow $workflow): void
     {
         DB::transaction(function () use ($workflow) {

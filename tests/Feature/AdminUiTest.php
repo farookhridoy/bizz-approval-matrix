@@ -363,4 +363,44 @@ class AdminUiTest extends ApprovalTestCase
 
         $this->assertSame('recalled', $req->refresh()->status);
     }
+
+    public function test_a_workflow_can_be_duplicated_as_a_draft_with_all_its_steps(): void
+    {
+        $admin = $this->admin();
+        $approver = $this->makeUser('custom');
+        $o = $this->org();
+        $wf = $this->makeWorkflow([
+            ['approver_type' => 'reporting_head', 'name' => 'Head', 'approver_ref' => 2, 'can_finish' => 1],
+            ['approver_type' => 'custom_user', 'name' => 'Mgmt', 'mode' => 'all', 'skip_condition' => ['amount_max' => 500], 'custom' => [['unit_id' => $o['unit'], 'user_id' => $approver->id]]],
+        ], ['name' => 'Original', 'state' => 'active', 'priority' => 3, 'conditions' => ['amount_min' => 10], 'version' => 4]);
+
+        $r = $this->as($admin)->postJson(route('approval-matrix.workflows.duplicate', $wf->id))->assertOk()->json();
+
+        $this->assertTrue($r['success']);
+        $copy = ApprovalWorkflow::where('name', 'Copy of Original')->firstOrFail();
+        $this->assertStringContainsString('/workflows/'.$copy->id.'/edit', $r['edit']);
+        $this->assertSame('draft', $copy->state);
+        $this->assertSame(1, (int) $copy->version);
+        $this->assertNull($copy->parent_id);
+        $this->assertSame(3, (int) $copy->priority);
+        $this->assertSame(['amount_min' => 10], $copy->conditions);
+        $this->assertCount(2, $copy->steps);
+        $this->assertSame(['Head', 'Mgmt'], $copy->steps->pluck('name')->all());
+        $this->assertSame(2, (int) $copy->steps[0]->approver_ref);
+        $this->assertTrue($copy->steps[0]->can_finish);
+        $this->assertSame(['amount_max' => 500], $copy->steps[1]->skip_condition);
+        $this->assertSame([$approver->id], $copy->steps[1]->customUsers->pluck('user_id')->all());
+        $this->assertSame('active', $wf->refresh()->state, 'the original is untouched');
+        $this->assertNotEquals($wf->steps->pluck('id')->all(), $copy->steps->pluck('id')->all(), 'steps are copies, not shared');
+    }
+
+    public function test_duplicating_needs_the_create_permission(): void
+    {
+        $wf = $this->makeWorkflow([['approver_type' => 'reporting_head']]);
+        Permission::findOrCreate('approval-matrix-index', 'web');
+        $viewer = $this->makeUser('viewer');
+        $viewer->givePermissionTo('approval-matrix-index');
+
+        $this->as($viewer)->postJson(route('approval-matrix.workflows.duplicate', $wf->id))->assertForbidden();
+    }
 }

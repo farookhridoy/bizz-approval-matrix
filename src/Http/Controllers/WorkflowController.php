@@ -92,6 +92,9 @@ class WorkflowController extends Controller
                             $out .= '<a class="btn btn-xs btn-warning" onclick="amPost(\''.route('approval-matrix.workflows.archive', $w->id).'\')" title="Archive"><i class="la la-archive"></i></a> ';
                         }
                     }
+                    if (auth()->user()->can('approval-matrix-create')) {
+                        $out .= '<a class="btn btn-xs btn-default" onclick="amPost(\''.route('approval-matrix.workflows.duplicate', $w->id).'\')" title="Duplicate as draft"><i class="la la-copy"></i></a> ';
+                    }
                     if (auth()->user()->can('approval-matrix-delete')) {
                         $out .= '<a class="btn btn-xs btn-danger" onclick="deleteFromCRUD($(this))" data-src="'.route('approval-matrix.workflows.destroy', $w->id).'" title="Delete"><i class="la la-trash"></i></a>';
                     }
@@ -156,6 +159,14 @@ class WorkflowController extends Controller
             'success' => true,
             'message' => $deleted ? 'Workflow deleted.' : 'Workflow has approval history, so it was archived instead of deleted.',
         ]);
+    }
+
+    public function duplicate($id)
+    {
+        $this->authorizeAbility('approval-matrix-create');
+        $copy = $this->service->duplicate(ApprovalWorkflow::with('steps.customUsers')->findOrFail($id), auth()->id());
+
+        return response()->json(['success' => true, 'message' => "Copied as draft “{$copy->name}”.", 'edit' => route('approval-matrix.workflows.edit', $copy->id)]);
     }
 
     public function activate($id)
