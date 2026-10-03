@@ -1,0 +1,31 @@
+{
+    "name": "bizzsol/approval-matrix",
+    "description": "Global ERP approval matrix: Module > Company > Unit > Department workflows, engine, admin UI.",
+    "type": "library",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.1",
+        "illuminate/support": "^10.0",
+        "illuminate/database": "^10.0",
+        "spatie/laravel-permission": "^6.0",
+        "yajra/laravel-datatables-oracle": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Bizzsol\\ApprovalMatrix\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Bizzsol\\ApprovalMatrix\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Bizzsol\\ApprovalMatrix\\ApprovalMatrixServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable"
+}
