@@ -10,6 +10,7 @@ use Bizzsol\ApprovalMatrix\Events\ApprovalStepAssigned;
 use Bizzsol\ApprovalMatrix\Exceptions\ApprovalException;
 use Bizzsol\ApprovalMatrix\Exceptions\NoApproverException;
 use Bizzsol\ApprovalMatrix\Models\ApprovalAction;
+use Bizzsol\ApprovalMatrix\Models\ApprovalDelegation;
 use Bizzsol\ApprovalMatrix\Models\ApprovalRequest;
 use Bizzsol\ApprovalMatrix\Models\ApprovalWorkflow;
 
@@ -198,7 +199,8 @@ class ApprovalEngine
     public function isAssigned(ApprovalRequest $request, int $userId): bool
     {
         return $request->status === ApprovalRequest::PENDING
-            && $request->actions()->where('level', $request->current_level)->where('assigned_to', $userId)->where('action', ApprovalAction::PENDING)->exists();
+            && $request->actions()->where('level', $request->current_level)->where('action', ApprovalAction::PENDING)
+                ->whereIn('assigned_to', $this->assigneeIdsFor($userId, $request->document_type))->exists();
     }
 
     /** Approvers the request is currently waiting on. @return int[] */
@@ -243,12 +245,63 @@ class ApprovalEngine
         });
     }
 
-    /** Requests currently waiting on $userId. */
+    /** Requests currently waiting on $userId - or on someone who delegated to them. */
     public function inbox(int $userId): Builder
     {
+        $delegations = $this->activeDelegationsFor($userId);
+
         return ApprovalRequest::query()
             ->where('status', ApprovalRequest::PENDING)
-            ->whereHas('actions', fn ($q) => $q->where('assigned_to', $userId)->where('action', ApprovalAction::PENDING));
+            ->where(function ($query) use ($userId, $delegations) {
+                $query->whereHas('actions', fn ($q) => $q->where('assigned_to', $userId)->where('action', ApprovalAction::PENDING));
+                foreach ($delegations as $d) {
+                    $query->orWhere(function ($q) use ($d) {
+                        if ($d->document_type) {
+                            $q->where('document_type', $d->document_type);
+                        }
+                        $q->whereHas('actions', fn ($a) => $a->where('assigned_to', $d->delegator_id)->where('action', ApprovalAction::PENDING));
+                    });
+                }
+            });
+    }
+
+    /** Active delegations in which $userId is the delegate. @return \Illuminate\Support\Collection<int,ApprovalDelegation> */
+    public function activeDelegationsFor(int $userId)
+    {
+        return ApprovalDelegation::activeOn()->where('delegate_id', $userId)->where('delegator_id', '!=', $userId)->get();
+    }
+
+    /**
+     * Everyone $userId currently decides for: themselves plus the people who delegated to them
+     * (optionally only for one document type). Use it for "can this user see / act on X" checks.
+     *
+     * @return int[]
+     */
+    public function assigneeIdsFor(int $userId, ?string $documentType = null): array
+    {
+        $delegators = $this->activeDelegationsFor($userId)
+            ->filter(fn ($d) => ! $d->document_type || ! $documentType || $d->document_type === $documentType)
+            ->pluck('delegator_id')->map(fn ($i) => (int) $i)->all();
+
+        return array_values(array_unique(array_merge([$userId], $delegators)));
+    }
+
+    /**
+     * People to notify when $approverIds are asked to decide: the approvers and whoever covers for them right now.
+     *
+     * @param  int[]  $approverIds
+     * @return int[]
+     */
+    public function withDelegates(array $approverIds, ?string $documentType = null): array
+    {
+        if (! $approverIds) {
+            return [];
+        }
+        $delegates = ApprovalDelegation::activeOn()->whereIn('delegator_id', $approverIds)
+            ->when($documentType, fn ($q) => $q->where(fn ($w) => $w->whereNull('document_type')->orWhere('document_type', $documentType)))
+            ->pluck('delegate_id')->map(fn ($i) => (int) $i)->all();
+
+        return array_values(array_unique(array_merge(array_map('intval', $approverIds), $delegates)));
     }
 
     // ---------------------------------------------------------------- internals
@@ -265,15 +318,22 @@ class ApprovalEngine
 
     private function pendingActionFor(ApprovalRequest $request, int $userId): ApprovalAction
     {
-        $action = $request->actions()
-            ->where('level', $request->current_level)->where('assigned_to', $userId)
-            ->where('action', ApprovalAction::PENDING)->first();
+        // the user's own assignment first, then one they hold through a delegation
+        $own = $request->actions()->where('level', $request->current_level)->where('assigned_to', $userId)->where('action', ApprovalAction::PENDING)->first();
+        if ($own) {
+            return $own;
+        }
 
-        if (! $action) {
+        $delegated = $request->actions()->where('level', $request->current_level)->where('action', ApprovalAction::PENDING)
+            ->whereIn('assigned_to', array_diff($this->assigneeIdsFor($userId, $request->document_type), [$userId]))->first();
+        if ($delegated && $userId === (int) $request->requested_by) {
+            throw new ApprovalException('You cannot approve your own request, even on someone\'s behalf.');
+        }
+        if (! $delegated) {
             throw new ApprovalException('You are not an approver for the current step.');
         }
 
-        return $action;
+        return $delegated;
     }
 
     private function ctxOf(ApprovalRequest $request): array

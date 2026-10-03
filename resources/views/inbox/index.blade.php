@@ -14,6 +14,7 @@
                     <li><i class="ace-icon fa fa-home home-icon"></i> <a>{{ __('Home') }}</a></li>
                     <li><a>ACL</a></li>
                     <li class="active">{{ __($title) }}</li>
+                    <li class="top-nav-btn"><a href="{{ route('approval-matrix.inbox.delegations.index') }}" class="btn btn-sm btn-info text-white"><i class="las la-user-clock"></i> Delegation</a></li>
                 </ul>
             </div>
             <div class="page-content">
