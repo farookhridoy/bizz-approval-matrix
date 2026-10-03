@@ -11,6 +11,7 @@
                 <li><a>ACL</a></li>
                 <li class="active">{{ __($title) }}</li>
                 <li class="top-nav-btn">
+                    <a href="{{ route('approval-matrix.coverage.index') }}" class="btn btn-sm btn-info text-white"><i class="las la-clipboard-check"></i> Coverage</a>
                     <a href="{{ route('approval-matrix.workflows.index') }}" class="btn btn-sm btn-warning text-white"><i class="las la-chevron-left"></i> Workflows</a>
                 </li>
             </ul>

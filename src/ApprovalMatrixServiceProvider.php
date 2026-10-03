@@ -31,7 +31,7 @@ class ApprovalMatrixServiceProvider extends ServiceProvider
         }
 
         if ($this->app->runningInConsole()) {
-            $this->commands([\Bizzsol\ApprovalMatrix\Console\RemindOverdue::class]);
+            $this->commands([\Bizzsol\ApprovalMatrix\Console\RemindOverdue::class, \Bizzsol\ApprovalMatrix\Console\CoverageCommand::class]);
             $this->publishes([__DIR__.'/../config/approvalmatrix.php' => config_path('approvalmatrix.php')], 'approvalmatrix-config');
             $this->publishes([__DIR__.'/../database/migrations' => database_path('migrations')], 'approvalmatrix-migrations');
         }
