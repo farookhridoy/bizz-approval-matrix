@@ -26,6 +26,9 @@ class ApprovalSimulator
             }
         }
         $ctx['attributes'] = $input['attributes'] ?? [];
+        if (! empty($input['department_id']) && empty($input['master_department_id'])) {
+            $ctx['master_department_id'] = null; // a department given explicitly beats the requester's
+        }
 
         $org = app(OrgDirectory::class);
         if (empty($ctx['company_id']) && ! empty($ctx['unit_id'])) {

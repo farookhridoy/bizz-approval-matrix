@@ -36,7 +36,11 @@ class ApprovalEngine
 
         $ctx = array_replace($ctx, array_filter($override, fn ($v) => $v !== null));
 
-        // Callers (e.g. erp-pms) may only know the unit's own department; derive its master department.
+        // Callers (e.g. erp-pms) may only know the unit's own department; derive its master department. A department
+        // handed in by the caller wins over the requester's own, master department included.
+        if (! empty($override['department_id']) && empty($override['master_department_id'])) {
+            $ctx['master_department_id'] = null;
+        }
         if (empty($ctx['master_department_id']) && ! empty($ctx['department_id'])) {
             $ctx['master_department_id'] = app(OrgDirectory::class)->masterOfDepartment((int) $ctx['department_id'], ! empty($ctx['unit_id']) ? (int) $ctx['unit_id'] : null);
         }
