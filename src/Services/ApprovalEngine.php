@@ -261,6 +261,23 @@ class ApprovalEngine
         });
     }
 
+    /**
+     * Administrative withdrawal: the document itself was cancelled/voided, so its open approval is closed (status
+     * recalled, pending assignments recalled). Unlike recall() it is not limited to the requester - callers authorise it.
+     */
+    public function cancel(ApprovalRequest $request, int $userId, ?string $comments = null): ApprovalRequest
+    {
+        return DB::transaction(function () use ($request, $userId, $comments) {
+            $request = $this->lock($request);
+            $request->actions()->where('action', ApprovalAction::PENDING)->update([
+                'action' => ApprovalAction::RECALLED, 'acted_by' => $userId, 'comments' => $comments ?: 'document cancelled', 'acted_at' => now(),
+            ]);
+            $this->finish($request, ApprovalRequest::RECALLED);
+
+            return $request->refresh();
+        });
+    }
+
     /** Requests currently waiting on $userId - or on someone who delegated to them. */
     public function inbox(int $userId): Builder
     {

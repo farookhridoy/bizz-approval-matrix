@@ -135,4 +135,18 @@ class FinishOrForwardTest extends ApprovalTestCase
         $r = app(ApprovalSimulator::class)->simulate(['document_type' => self::DOC_TYPE, 'requester_id' => $this->requester->id]);
         $this->assertSame([true, false], array_column($r['steps'], 'can_finish'));
     }
+
+    public function test_cancel_closes_an_open_request_for_a_voided_document(): void
+    {
+        $this->workflow();
+        $req = $this->doc->submitForApproval($this->requester->id);
+
+        $req = $this->engine()->cancel($req, $this->mgmt->id, 'PO cancelled');
+
+        $this->assertSame(ApprovalRequest::RECALLED, $req->status);
+        $this->assertFalse($this->engine()->inbox($this->head->id)->exists());
+        $this->assertSame(0, \Bizzsol\ApprovalMatrix\Models\ApprovalAction::where('request_id', $req->id)->where('action', 'pending')->count());
+        $this->expectException(ApprovalException::class);
+        $this->engine()->cancel($req, $this->mgmt->id); // already closed
+    }
 }
