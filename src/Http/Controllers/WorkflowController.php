@@ -231,7 +231,7 @@ class WorkflowController extends Controller
         return $workflow->steps->map(fn ($s) => [
             'name' => $s->name, 'stage_key' => $s->stage_key, 'step_kind' => $s->step_kind,
             'approver_type' => $s->approver_type, 'approver_ref' => $s->approver_ref, 'user_id' => $s->user_id,
-            'mode' => $s->mode, 'min_approvals' => $s->min_approvals, 'is_mandatory' => $s->is_mandatory ? 1 : 0,
+            'mode' => $s->mode, 'min_approvals' => $s->min_approvals, 'is_mandatory' => $s->is_mandatory ? 1 : 0, 'can_finish' => $s->can_finish ? 1 : 0,
             'skip_amount_max' => $s->skip_condition['amount_max'] ?? null, 'sla_hours' => $s->sla_hours, 'on_reject' => $s->on_reject,
             'custom' => $s->customUsers->map(fn ($u) => $u->only(['unit_id', 'department_id', 'master_department_id', 'user_id']))->all(),
         ])->all();

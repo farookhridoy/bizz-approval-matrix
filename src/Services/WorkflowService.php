@@ -268,6 +268,7 @@ class WorkflowService
                 'mode' => $r['mode'] ?? 'any',
                 'min_approvals' => ($r['mode'] ?? 'any') === 'n_of_m' ? (int) $r['min_approvals'] : null,
                 'is_mandatory' => ! empty($r['is_mandatory']) ? 1 : 0,
+                'can_finish' => ! empty($r['can_finish']) ? 1 : 0,
                 'skip_condition' => $skip,
                 'sla_hours' => ! empty($r['sla_hours']) ? (int) $r['sla_hours'] : null,
                 'on_reject' => $r['on_reject'] ?? 'terminate',

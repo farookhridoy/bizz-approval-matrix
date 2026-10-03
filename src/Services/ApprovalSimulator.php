@@ -53,7 +53,7 @@ class ApprovalSimulator
             foreach ($snapshotSteps as $s) {
                 $snap = $s->toArray() + ['custom_users' => $s->customUsers->map(fn ($u) => $u->only(['unit_id', 'department_id', 'user_id']))->all()];
                 $row = ['level' => $s->level, 'name' => $s->name, 'type' => $s->approver_type, 'ref' => $s->approver_ref, 'mode' => $s->mode,
-                    'mandatory' => (bool) $s->is_mandatory, 'status' => 'applies', 'approvers' => [], 'approver_ids' => []];
+                    'mandatory' => (bool) $s->is_mandatory, 'can_finish' => (bool) $s->can_finish, 'status' => 'applies', 'approvers' => [], 'approver_ids' => []];
 
                 if ($s->skip_condition && ConditionMatcher::matches($s->skip_condition, $ctx)) {
                     $row['status'] = 'skipped';

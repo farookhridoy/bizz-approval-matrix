@@ -94,6 +94,7 @@ class ApprovalEngine
                     'mode' => $s->mode,
                     'min_approvals' => $s->min_approvals,
                     'is_mandatory' => (bool) $s->is_mandatory,
+                    'can_finish' => (bool) $s->can_finish,
                     'skip_condition' => $s->skip_condition,
                     'on_reject' => $s->on_reject,
                     'custom_users' => $s->customUsers->map(fn ($u) => $u->only(['unit_id', 'department_id', 'master_department_id', 'user_id']))->all(),
@@ -113,21 +114,54 @@ class ApprovalEngine
         });
     }
 
-    public function approve(ApprovalRequest $request, int $userId, ?string $comments = null): ApprovalRequest
+    /**
+     * @param  bool  $finish  complete the whole request at this step (only for steps flagged `can_finish`,
+     *                        and only once the step itself is satisfied); remaining steps are recorded as skipped.
+     */
+    public function approve(ApprovalRequest $request, int $userId, ?string $comments = null, bool $finish = false): ApprovalRequest
     {
-        return DB::transaction(function () use ($request, $userId, $comments) {
+        return DB::transaction(function () use ($request, $userId, $comments, $finish) {
             $request = $this->lock($request);
             $action = $this->pendingActionFor($request, $userId);
+
+            if ($finish && empty($request->stepAt($action->level)['can_finish'])) {
+                throw new ApprovalException('This step cannot complete the request on its own; forward it to the next step.');
+            }
 
             $action->update(['action' => ApprovalAction::APPROVED, 'acted_by' => $userId, 'comments' => $comments, 'acted_at' => now()]);
 
             if ($this->stepSatisfied($request, $action->level)) {
                 $this->closeLevel($request, $action->level);
-                $this->activateNext($request, $action->level, $this->ctxOf($request));
+                if ($finish) {
+                    $this->skipRemaining($request, $action->level);
+                    $this->finish($request, ApprovalRequest::APPROVED);
+                } else {
+                    $this->activateNext($request, $action->level, $this->ctxOf($request));
+                }
             }
 
             return $request->refresh();
         });
+    }
+
+    /** The open (pending) request for a document, if any. */
+    public function openRequestFor(Model $approvable): ?ApprovalRequest
+    {
+        return ApprovalRequest::where('approvable_type', $approvable->getMorphClass())
+            ->where('approvable_id', $approvable->getKey())->where('status', ApprovalRequest::PENDING)->latest('id')->first();
+    }
+
+    /** Is $userId one of the people the open request is currently waiting on? */
+    public function isAssigned(ApprovalRequest $request, int $userId): bool
+    {
+        return $request->status === ApprovalRequest::PENDING
+            && $request->actions()->where('level', $request->current_level)->where('assigned_to', $userId)->where('action', ApprovalAction::PENDING)->exists();
+    }
+
+    /** Approvers the request is currently waiting on. @return int[] */
+    public function currentApprovers(ApprovalRequest $request): array
+    {
+        return $request->actions()->where('level', $request->current_level)->where('action', ApprovalAction::PENDING)->pluck('assigned_to')->map(fn ($i) => (int) $i)->all();
     }
 
     public function reject(ApprovalRequest $request, int $userId, ?string $comments = null): ApprovalRequest
@@ -274,6 +308,13 @@ class ApprovalEngine
         }
 
         $this->finish($request, ApprovalRequest::APPROVED);
+    }
+
+    private function skipRemaining(ApprovalRequest $request, int $afterLevel): void
+    {
+        for ($l = $request->nextLevelAfter($afterLevel); $l !== null; $l = $request->nextLevelAfter($l)) {
+            $this->recordSkip($request, $request->stepAt($l), 'request completed at an earlier step');
+        }
     }
 
     private function recordSkip(ApprovalRequest $request, array $step, string $why): void

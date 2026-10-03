@@ -24,6 +24,7 @@ class ApprovalStep extends Model
 
     protected $casts = [
         'is_mandatory' => 'boolean',
+        'can_finish' => 'boolean',
         'skip_condition' => 'array',
     ];
 

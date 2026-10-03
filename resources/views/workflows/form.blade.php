@@ -180,7 +180,9 @@
                 <div class="col-md-2"><label>On reject</label>
                     <select class="form-control" data-f="on_reject"><option value="terminate">End request</option><option value="return_to_requester">Return to requester</option></select></div>
                 <div class="col-md-2"><label>&nbsp;</label><div class="checkbox"><label><input type="checkbox" value="1" data-f="is_mandatory" checked> Mandatory</label></div>
-                    <small class="text-muted">Optional steps are skipped when nobody can be found.</small></div>
+                    <small class="text-muted">Optional steps are skipped when nobody can be found.</small>
+                    <div class="checkbox"><label><input type="checkbox" value="1" data-f="can_finish"> Approver may finish here</label></div>
+                    <small class="text-muted">“Acknowledge” completes the request; “Send to next” continues to the following steps.</small></div>
             </div>
         </div>
     </div>
@@ -257,6 +259,7 @@ $(function () {
         $s.find('[data-f=sla_hours]').val(data.sla_hours || '');
         $s.find('[data-f=on_reject]').val(data.on_reject || 'terminate');
         $s.find('[data-f=is_mandatory]').prop('checked', data.is_mandatory === undefined ? true : !!parseInt(data.is_mandatory));
+        $s.find('[data-f=can_finish]').prop('checked', !!parseInt(data.can_finish || 0));
         $s.find('[data-f=user_id]').val(data.user_id || '');
         if (type === 'reporting_head') $s.find('[data-f=approver_ref_hops]').val(data.approver_ref || 1);
         if (type === 'role') $s.find('[data-f=approver_ref_role]').val(data.approver_ref || '');

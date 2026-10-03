@@ -69,7 +69,7 @@
                                 @foreach ($result['steps'] as $s)
                                     <tr>
                                         <td>{{ $s['level'] }}</td>
-                                        <td>{{ $s['name'] }} @unless($s['mandatory'])<small class="text-muted">(optional)</small>@endunless</td>
+                                        <td>{{ $s['name'] }} @unless($s['mandatory'])<small class="text-muted">(optional)</small>@endunless @if($s['can_finish'])<span class="badge badge-info">can finish</span>@endif</td>
                                         <td>{{ \Bizzsol\ApprovalMatrix\Services\WorkflowService::APPROVER_TYPES[$s['type']] ?? $s['type'] }}@if($s['ref']) <small>({{ $s['ref'] }})</small>@endif</td>
                                         <td>{{ str_replace('_', ' ', $s['mode']) }}</td>
                                         <td>{{ implode(', ', $s['approvers']) ?: '—' }}</td>
