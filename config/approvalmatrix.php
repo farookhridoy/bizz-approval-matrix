@@ -23,5 +23,7 @@ return [
         // (a one-person level is the same thing) and no early finish are allowed.
         'procurement.cs' => ['module' => 'procurement', 'label' => 'Comparative Statement', 'modes' => ['all'], 'allow_finish' => false],
         'procurement.purchase_order' => ['module' => 'procurement', 'label' => 'Purchase Order'],
+        // Cash approval of direct-purchase POs (releases the PO to be sent). No early finish: every level must approve.
+        'procurement.po_cash' => ['module' => 'procurement', 'label' => 'PO Cash Approval', 'allow_finish' => false],
     ],
 ];

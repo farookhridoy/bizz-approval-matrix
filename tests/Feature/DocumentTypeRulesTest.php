@@ -48,4 +48,13 @@ class DocumentTypeRulesTest extends ApprovalTestCase
         [$wf] = $this->save(['mode' => 'any', 'can_finish' => 1], 'procurement.requisition');
         $this->assertTrue($wf->steps->first()->can_finish);
     }
+
+    public function test_po_cash_forbids_early_finish_but_allows_any_mode(): void
+    {
+        [$wf] = $this->save(['mode' => 'any'], 'procurement.po_cash');
+        $this->assertSame('any', $wf->steps->first()->mode);
+
+        $this->expectException(ValidationException::class);
+        $this->save(['can_finish' => 1], 'procurement.po_cash');
+    }
 }
