@@ -88,4 +88,5 @@
 .am table.dataTable thead th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--am-muted);background:var(--am-bg);border-bottom:1px solid var(--am-line)!important;white-space:nowrap}
 .am table.dataTable tbody td{vertical-align:middle;padding:12px 14px}
 .am .dataTables_wrapper .dataTables_filter input{border-radius:9px}
+.am-name .am-avatar{margin-right:8px}.am-two{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}@media(max-width:991px){.am-two{grid-template-columns:1fr}}.am-meta{display:flex;gap:22px;flex-wrap:wrap;font-size:13px;color:var(--am-muted)}.am-meta b{color:var(--am-ink);display:block;font-size:14px}.am-cmt{background:var(--am-bg);border-radius:8px;padding:6px 10px;font-size:13px;margin-top:4px}
 </style>

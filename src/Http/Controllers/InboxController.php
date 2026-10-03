@@ -36,17 +36,27 @@ class InboxController extends Controller
 
                     return $type.' · '.($d['url'] ? '<a href="'.e($d['url']).'" target="_blank">'.e($d['label']).'</a>' : e($d['label']));
                 })
-                ->addColumn('requester', fn ($r) => e($names[$r->requested_by] ?? '—'))
+                ->addColumn('requester', function ($r) use ($names) {
+                    $n = (string) ($names[$r->requested_by] ?? '—');
+
+                    return '<span class="am-name"><span class="am-avatar">'.e(mb_substr($n, 0, 1)).'</span>'.e($n).'</span>';
+                })
                 ->editColumn('amount', fn ($r) => $r->amount !== null ? number_format($r->amount, 2) : '—')
-                ->addColumn('step', fn ($r) => e($r->stepAt((int) $r->current_level)['name'] ?? ('Level '.$r->current_level)))
-                ->addColumn('submitted', fn ($r) => $r->created_at->format('Y-m-d H:i'))
-                ->addColumn('actions', fn ($r) => '<a href="'.route('approval-matrix.inbox.show', $r->id).'" class="btn btn-xs btn-primary"><i class="la la-eye"></i> Review</a>')
-                ->rawColumns(['document', 'actions'])
+                ->addColumn('step', fn ($r) => '<span class="am-chip info">'.e($r->stepAt((int) $r->current_level)['name'] ?? ('Level '.$r->current_level)).'</span>')
+                ->addColumn('submitted', function ($r) {
+                    $days = (int) $r->created_at->diffInDays(now());
+                    $chip = $days >= 3 ? 'bad' : ($days >= 1 ? 'warn' : 'muted');
+
+                    return e($r->created_at->format('Y-m-d H:i')).'<br><span class="am-chip '.$chip.'">'.e($r->created_at->diffForHumans()).'</span>';
+                })
+                ->addColumn('actions', fn ($r) => '<a href="'.route('approval-matrix.inbox.show', $r->id).'" class="btn btn-sm btn-primary"><i class="la la-eye"></i> Review</a>')
+                ->rawColumns(['document', 'requester', 'step', 'submitted', 'actions'])
                 ->make(true);
         }
 
         return view('approvalmatrix::inbox.index', [
             'title' => 'My Approvals',
+            'waiting' => $this->engine->inbox(auth()->id())->count(),
             'headerColumns' => [
                 ['SL', 'SL', 'text-center'],
                 ['document', 'Document', 'text-left'],

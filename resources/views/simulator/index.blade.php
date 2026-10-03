@@ -2,6 +2,10 @@
 
 @section('title', session()->get('system-information')['name']. ' | '.$title)
 
+@section('page-css')
+    @include('approvalmatrix::partials.ui')
+@endsection
+
 @section('main-content')
 <div class="main-content">
     <div class="main-content-inner">
@@ -17,10 +21,11 @@
             </ul>
         </div>
 
-        <div class="page-content">
-            <div class="panel panel-info">
-                <div class="panel-heading"><h3 class="panel-title">Who would approve this?</h3></div>
-                <div class="panel-body">
+        <div class="page-content am">
+            <div class="am-head"><div><h2>Approval simulator</h2><p>Dry-run a request: see which workflow matches and who would approve each step. Nothing is created.</p></div></div>
+            <div class="am-card">
+                <div class="am-card-h"><h3>Who would approve this?</h3></div>
+                <div class="am-card-b">
                     <form method="get" action="{{ route('approval-matrix.simulator.index') }}">
                         <div class="form-group row">
                             <div class="col-md-3"><label><strong>Document</strong></label>
@@ -50,44 +55,47 @@
                                     @foreach ($masters as $id => $n)<option value="{{ $id }}" @selected(request('master_department_id') == $id)>{{ $n }}</option>@endforeach
                                 </select></div>
                         </div>
-                        <button class="btn btn-primary rounded" type="submit"><i class="la la-play"></i> Simulate</button>
+                        <button class="btn btn-primary" type="submit"><i class="la la-play"></i> Simulate</button>
                     </form>
                 </div>
             </div>
 
             @if ($result)
-                @foreach ($result['warnings'] as $w)<div class="alert alert-warning">{{ $w }}</div>@endforeach
+                @foreach ($result['warnings'] as $w)<div class="am-note warn"><i class="las la-exclamation-triangle"></i><div>{{ $w }}</div></div>@endforeach
 
                 @if ($result['workflow'])
-                    <div class="panel panel-success">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">Matched: {{ $result['workflow']->name }} <small>v{{ $result['workflow']->version }}</small></h3>
-                        </div>
-                        <div class="panel-body">
-                            <table class="table table-bordered">
-                                <thead><tr><th>#</th><th>Step</th><th>Approver rule</th><th>Mode</th><th>Resolved approvers</th><th>Result</th></tr></thead>
-                                <tbody>
-                                @foreach ($result['steps'] as $s)
-                                    <tr>
-                                        <td>{{ $s['level'] }}</td>
-                                        <td>{{ $s['name'] }} @unless($s['mandatory'])<small class="text-muted">(optional)</small>@endunless @if($s['can_finish'])<span class="badge badge-info">can finish</span>@endif</td>
-                                        <td>{{ \Bizzsol\ApprovalMatrix\Services\WorkflowService::APPROVER_TYPES[$s['type']] ?? $s['type'] }}@if($s['ref']) <small>({{ $s['ref'] }})</small>@endif</td>
-                                        <td>{{ str_replace('_', ' ', $s['mode']) }}</td>
-                                        <td>{{ implode(', ', $s['approvers']) ?: '—' }}</td>
-                                        <td>
+                    <div class="am-card">
+                        <div class="am-card-h"><h3>Matched: {{ $result['workflow']->name }} <span class="am-chip">v{{ $result['workflow']->version }}</span></h3>
+                            <a href="{{ route('approval-matrix.workflows.edit', $result['workflow']->id) }}" class="btn btn-sm btn-default"><i class="la la-pencil"></i> Edit workflow</a></div>
+                        <div class="am-card-b">
+                            <div class="am-steps">
+                            @foreach ($result['steps'] as $s)
+                                @php($dot = ['applies' => 'ok', 'skipped' => 'skipped', 'needs-requester' => 'pending'][$s['status']] ?? 'bad')
+                                <div class="am-step">
+                                    <span class="am-dot {{ $dot }}">{{ $s['level'] }}</span>
+                                    <div class="am-step-body">
+                                        <div class="am-step-title">{{ $s['name'] }}
+                                            @unless($s['mandatory'])<span class="am-chip muted">optional</span>@endunless
+                                            @if($s['can_finish'])<span class="am-chip info">can finish</span>@endif
                                             @switch($s['status'])
-                                                @case('applies')<span class="badge badge-success">Approval needed</span>@break
-                                                @case('skipped')<span class="badge badge-secondary">Skipped</span>@break
-                                                @case('needs-requester')<span class="badge badge-warning">Pick a requester</span>@break
-                                                @default<span class="badge badge-danger">No approver!</span>
+                                                @case('applies')<span class="am-state approved">Approval needed</span>@break
+                                                @case('skipped')<span class="am-state skipped">Skipped</span>@break
+                                                @case('needs-requester')<span class="am-state pending">Pick a requester</span>@break
+                                                @default<span class="am-state rejected">No approver!</span>
                                             @endswitch
-                                        </td>
-                                    </tr>
-                                @endforeach
-                                </tbody>
-                            </table>
+                                        </div>
+                                        <div class="am-step-sub">{{ \Bizzsol\ApprovalMatrix\Services\WorkflowService::APPROVER_TYPES[$s['type']] ?? $s['type'] }}@if($s['ref']) ({{ $s['ref'] }})@endif · {{ str_replace('_', ' ', $s['mode']) }}</div>
+                                        @forelse ($s['approvers'] as $n)
+                                            <span class="am-name" style="margin-right:12px"><span class="am-avatar">{{ mb_substr($n, 0, 1) }}</span>{{ $n }}</span>
+                                        @empty
+                                            <span class="text-muted">—</span>
+                                        @endforelse
+                                    </div>
+                                </div>
+                            @endforeach
+                            </div>
                             @if ($result['others']->isNotEmpty())
-                                <small class="text-muted">Also matched but outranked: {{ $result['others']->pluck('name')->implode(', ') }}</small>
+                                <p class="text-muted" style="margin:14px 0 0;font-size:12px">Also matched but outranked: {{ $result['others']->pluck('name')->implode(', ') }}</p>
                             @endif
                         </div>
                     </div>
