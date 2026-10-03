@@ -134,6 +134,18 @@ class DelegationTest extends ApprovalTestCase
         $this->assertEqualsCanonicalizing([$this->boss->id, $this->delegate->id], $this->engine()->withDelegates([$this->boss->id], self::DOC_TYPE));
     }
 
+    public function test_assignment_for_tells_which_assignment_a_user_acts_on(): void
+    {
+        $this->assertNull($this->engine()->assignmentFor($this->request, $this->delegate->id));
+        $this->assertSame($this->boss->id, (int) $this->engine()->assignmentFor($this->request, $this->boss->id)->assigned_to);
+
+        $this->delegate();
+        $this->assertSame($this->boss->id, (int) $this->engine()->assignmentFor($this->request, $this->delegate->id)->assigned_to, 'the delegate acts on the boss\'s assignment');
+
+        $this->engine()->approve($this->request, $this->boss->id);
+        $this->assertNull($this->engine()->assignmentFor($this->request->refresh(), $this->boss->id), 'finished request: nothing pending');
+    }
+
     // ------------------------------------------------------------------ screen
 
     private function member()

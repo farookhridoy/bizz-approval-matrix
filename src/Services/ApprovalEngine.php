@@ -203,6 +203,21 @@ class ApprovalEngine
                 ->whereIn('assigned_to', $this->assigneeIdsFor($userId, $request->document_type))->exists();
     }
 
+    /**
+     * The pending assignment $userId would act on right now: their own, else one they hold through a delegation.
+     * Null when they have none (no exception). Lets callers keep legacy per-approver rows in step with the matrix.
+     */
+    public function assignmentFor(ApprovalRequest $request, int $userId): ?ApprovalAction
+    {
+        if ($request->status !== ApprovalRequest::PENDING) {
+            return null;
+        }
+        $level = $request->actions()->where('level', $request->current_level)->where('action', ApprovalAction::PENDING);
+
+        return (clone $level)->where('assigned_to', $userId)->first()
+            ?? (clone $level)->whereIn('assigned_to', array_diff($this->assigneeIdsFor($userId, $request->document_type), [$userId]))->first();
+    }
+
     /** Approvers the request is currently waiting on. @return int[] */
     public function currentApprovers(ApprovalRequest $request): array
     {
