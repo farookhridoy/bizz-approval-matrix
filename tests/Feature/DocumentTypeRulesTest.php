@@ -57,4 +57,18 @@ class DocumentTypeRulesTest extends ApprovalTestCase
         $this->expectException(ValidationException::class);
         $this->save(['can_finish' => 1], 'procurement.po_cash');
     }
+
+    public function test_po_bill_po_advance_and_spot_price_forbid_early_finish(): void
+    {
+        foreach (['procurement.po_bill', 'procurement.po_advance', 'procurement.spot_price'] as $type) {
+            [$wf] = $this->save(['mode' => 'any'], $type);
+            $this->assertSame('any', $wf->steps->first()->mode, $type);
+            try {
+                $this->save(['can_finish' => 1], $type);
+                $this->fail("$type accepted an early finish");
+            } catch (ValidationException $e) {
+                $this->assertNotEmpty($e->errors());
+            }
+        }
+    }
 }
