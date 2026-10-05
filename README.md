@@ -1,5 +1,7 @@
 # bizzsol/approval-matrix
 
+> Release notes: `CHANGELOG.md`. Suite guidebook: `erp-main-v11/docs/handover/`.
+
 Global approval matrix for the ERP suite (erp-main, erp-pms, hrms, finance, ...). One shared MySQL database,
 so **exactly one app owns the schema** (erp-main); every other app consumes the services.
 
