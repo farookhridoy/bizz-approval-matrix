@@ -27,6 +27,11 @@ return [
         // Cash approval of direct-purchase POs (releases the PO to be sent). No early finish: every level must approve.
         'procurement.po_cash' => ['module' => 'procurement', 'label' => 'PO Cash Approval', 'allow_finish' => false],
         // Stock adjustments (write-offs / gains). The last approval posts it to inventory and finance, so no early finish.
+        // Supplier bill / invoice of a PO (or of one GRN) uploaded by purchase and audited before accounts pays it. The last approval
+        // posts the GR/IR ledger entry, so no early finish: every level must approve.
+        'procurement.po_bill' => ['module' => 'procurement', 'label' => 'PO Bill / Invoice Audit', 'allow_finish' => false],
+        // Advance payment of a PO checked by audit before accounts releases it. No early finish.
+        'procurement.po_advance' => ['module' => 'procurement', 'label' => 'PO Advance Audit', 'allow_finish' => false],
         'inventory.adjustment' => ['module' => 'inventory', 'label' => 'Inventory Adjustment', 'allow_finish' => false],
     ],
 ];
