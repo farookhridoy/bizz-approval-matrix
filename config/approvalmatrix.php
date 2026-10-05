@@ -30,6 +30,8 @@ return [
         // Supplier bill / invoice of a PO (or of one GRN) uploaded by purchase and audited before accounts pays it. The last approval
         // posts the GR/IR ledger entry, so no early finish: every level must approve.
         'procurement.po_bill' => ['module' => 'procurement', 'label' => 'PO Bill / Invoice Audit', 'allow_finish' => false],
+        // Price approval of a direct-purchase (spot) bill: management first, then accounts (two levels, in that order). Every level must approve.
+        'procurement.spot_price' => ['module' => 'procurement', 'label' => 'Spot Purchase Price Approval', 'allow_finish' => false],
         // Advance payment of a PO checked by audit before accounts releases it. No early finish.
         'procurement.po_advance' => ['module' => 'procurement', 'label' => 'PO Advance Audit', 'allow_finish' => false],
         'inventory.adjustment' => ['module' => 'inventory', 'label' => 'Inventory Adjustment', 'allow_finish' => false],

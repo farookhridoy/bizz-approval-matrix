@@ -58,9 +58,9 @@ class DocumentTypeRulesTest extends ApprovalTestCase
         $this->save(['can_finish' => 1], 'procurement.po_cash');
     }
 
-    public function test_po_bill_and_po_advance_forbid_early_finish(): void
+    public function test_po_bill_po_advance_and_spot_price_forbid_early_finish(): void
     {
-        foreach (['procurement.po_bill', 'procurement.po_advance'] as $type) {
+        foreach (['procurement.po_bill', 'procurement.po_advance', 'procurement.spot_price'] as $type) {
             [$wf] = $this->save(['mode' => 'any'], $type);
             $this->assertSame('any', $wf->steps->first()->mode, $type);
             try {
