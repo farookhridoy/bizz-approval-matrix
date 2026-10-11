@@ -2,6 +2,11 @@
 
 Consumers: erp-main (owns schema + admin screens), erp-pms (services + inbox) (`"bizzsol/approval-matrix": "^0.2"`). Guidebook: `erp-main-v11/docs/handover/05-APPROVAL-MATRIX.md`.
 
+## v0.2.5 - 2026-10-11
+- **Module on/off switch.** New table `approval_module_settings` (migration runs in the schema-owning app only) and `Services\ModuleSwitch`. A module switched off resolves no workflow in `WorkflowResolver`, so its documents use their legacy approval flow; workflows are kept. No row = `approvalmatrix.default_module_enabled` (`APPROVAL_MATRIX_DEFAULT_ENABLED`, default **true**, so nothing changes on upgrade).
+- Dashboard: a "Modules" strip on ACL > Approval Matrix (`POST approval-matrix/modules/{module}`, permission `approval-matrix-edit`). The simulator warns when the module is off.
+- Run `php artisan migrate` in the app that owns the schema (erp-main) after `composer update`.
+
 ## v0.2.3 - 2026-10-05
 - Document type `procurement.spot_price` (spot / direct-purchase bill price approval: management then accounts). `allow_finish` false.
 

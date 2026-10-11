@@ -22,6 +22,11 @@ class WorkflowResolver
     /** Matching workflows, best first. */
     public function candidates(string $documentType, array $ctx, ?\DateTimeInterface $on = null): Collection
     {
+        // module switched off: nothing matches, so the host falls back to the document's legacy approval flow
+        if (! app(ModuleSwitch::class)->isEnabledFor($documentType)) {
+            return collect();
+        }
+
         $on = ($on ? \Carbon\Carbon::instance($on) : now())->toDateString();
 
         return ApprovalWorkflow::query()

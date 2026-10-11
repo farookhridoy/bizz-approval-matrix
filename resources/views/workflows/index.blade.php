@@ -5,6 +5,16 @@
 @section('page-css')
     @include('yajra.css')
     @include('approvalmatrix::partials.ui')
+    <style>
+        .am-modules-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-bottom:10px}
+        .am-modules{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+        .am-mod{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;margin:0;padding:10px 12px;border:1px solid var(--am-line);border-radius:10px;background:#fff;cursor:pointer}
+        .am-mod.on{border-color:var(--am-primary);background:var(--am-primary-soft)}
+        .am-mod.busy{opacity:.6;pointer-events:none}
+        .am-mod-name{font-weight:600}
+        .am-mod-meta{grid-column:1;font-size:12px;color:var(--am-muted)}
+        .am-mod-toggle{grid-column:2;grid-row:1 / span 2;width:18px;height:18px;cursor:pointer}
+    </style>
 @endsection
 
 @section('main-content')
@@ -32,6 +42,23 @@
                     <div>
                         <h2>Approval workflows</h2>
                         <p>Who approves what. For each request the <strong>most specific</strong> active workflow wins (department › unit › company › everyone); ties break by priority, then by newest version.</p>
+                    </div>
+                </div>
+
+                <div class="am-card" id="am-modules">
+                    <div class="am-card-b">
+                        <div class="am-modules-head"><b>Modules</b>
+                            <span class="am-muted am-small">Switch the matrix on or off per module. <strong>Off</strong> = that module's documents use their original approval flow; its workflows are kept and take effect again when switched back on.</span>
+                        </div>
+                        <div class="am-modules">
+                            @foreach ($moduleSwitch as $m => $on)
+                                <label class="am-mod {{ $on ? 'on' : 'off' }}" data-module="{{ $m }}">
+                                    <span class="am-mod-name">{{ ucfirst($m) }}</span>
+                                    <span class="am-mod-meta">{{ $activeByModule[$m] ?? 0 }} active workflow(s) · <em>{{ $on ? 'matrix in use' : 'legacy flow' }}</em></span>
+                                    <input type="checkbox" class="am-mod-toggle" value="{{ $m }}" @checked($on) @cannot('approval-matrix-edit') disabled @endcannot>
+                                </label>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
 
@@ -83,6 +110,22 @@
             function reload() {
                 $('.datatable-serverside').DataTable().ajax.url(location.pathname + '?module=' + encodeURIComponent($('#f-module').val() || '') + '&state=' + encodeURIComponent(state)).load();
             }
+            $('#am-modules').on('change', '.am-mod-toggle', function () {
+                var box = $(this), card = box.closest('.am-mod'), on = box.is(':checked'), module = box.val();
+                var msg = on ? 'Enable the approval matrix for ' + module + '?' : 'Disable the approval matrix for ' + module + '? New documents of this module will use their original approval flow.';
+                if (!confirm(msg)) { box.prop('checked', !on); return; }
+                card.addClass('busy');
+                $.post('{{ url('approval-matrix/modules') }}/' + encodeURIComponent(module), {enabled: on ? 1 : 0})
+                    .done(function (res) {
+                        card.toggleClass('on', on).toggleClass('off', !on).find('em').text(on ? 'matrix in use' : 'legacy flow');
+                        if (window.toastr) toastr.success(res.message);
+                    })
+                    .fail(function (xhr) {
+                        box.prop('checked', !on);
+                        if (window.toastr) toastr.error((xhr.responseJSON && xhr.responseJSON.message) || 'Could not change the module setting.');
+                    })
+                    .always(function () { card.removeClass('busy'); });
+            });
             $('#f-module').on('change', reload);
             $('#am-state-filter').on('click', '.am-stat', function (e) {
                 e.preventDefault();

@@ -14,6 +14,9 @@ Route::group(['prefix' => 'approval-matrix', 'as' => 'approval-matrix.', 'middle
         ->middleware('permission:approval-matrix-create');
     Route::post('workflows/{id}/activate', [WorkflowController::class, 'activate'])->name('workflows.activate')
         ->middleware('permission:approval-matrix-edit');
+    // Module-wise on/off (legacy flow when off)
+    Route::post('modules/{module}', [\Bizzsol\ApprovalMatrix\Http\Controllers\ModuleSwitchController::class, 'update'])->name('modules.update')
+        ->middleware('permission:approval-matrix-edit');
     Route::post('workflows/{id}/archive', [WorkflowController::class, 'archive'])->name('workflows.archive')
         ->middleware('permission:approval-matrix-edit');
 

@@ -12,6 +12,12 @@ return [
     'inbox_ui' => env('APPROVAL_MATRIX_INBOX_UI', false), // host only the approver inbox (no builder/simulator); ignored when admin_ui is on
     'load_migrations' => env('APPROVAL_MATRIX_MIGRATIONS', false),
 
+    /*
+     * Module on/off switch (ACL > Approval Matrix, "Modules" strip). A module with no saved setting follows this default.
+     * Disabled module = no workflow is resolved, documents use their original approval flow; workflows are kept.
+     */
+    'default_module_enabled' => env('APPROVAL_MATRIX_DEFAULT_ENABLED', true),
+
     'modules' => ['core', 'procurement', 'inventory', 'finance', 'hrms', 'production', 'pmd'],
 
     /*

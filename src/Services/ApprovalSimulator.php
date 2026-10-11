@@ -63,6 +63,10 @@ class ApprovalSimulator
             $workflow = $candidates->first();
         }
 
+        if (! app(ModuleSwitch::class)->isEnabledFor($input['document_type'])) {
+            $warnings[] = 'The approval matrix is switched OFF for this module, so real requests use the legacy flow whatever workflows exist.';
+        }
+
         if (! $workflow) {
             $warnings[] = 'No active workflow matches this document — the legacy flow (if any) would be used.';
         } else {

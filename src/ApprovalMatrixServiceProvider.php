@@ -10,6 +10,7 @@ class ApprovalMatrixServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/approvalmatrix.php', 'approvalmatrix');
+        $this->app->singleton(Services\ModuleSwitch::class);
     }
 
     public function boot(): void

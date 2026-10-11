@@ -43,6 +43,8 @@ class WorkflowController extends Controller
             'title' => 'Approval Workflows',
             'headerColumns' => $this->headerColumns(),
             'modules' => config('approvalmatrix.modules'),
+            'moduleSwitch' => app(\Bizzsol\ApprovalMatrix\Services\ModuleSwitch::class)->all(),
+            'activeByModule' => ApprovalWorkflow::where('state', ApprovalWorkflow::STATE_ACTIVE)->where('status', 1)->selectRaw('module, count(*) c')->groupBy('module')->pluck('c', 'module'),
             'counts' => ['all' => $counts->sum(), 'active' => $counts['active'] ?? 0, 'draft' => $counts['draft'] ?? 0, 'archived' => $counts['archived'] ?? 0],
         ]);
     }
