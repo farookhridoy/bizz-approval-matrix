@@ -2,6 +2,9 @@
 
 Consumers: erp-main (owns schema + admin screens), erp-pms (services + inbox) (`"bizzsol/approval-matrix": "^0.2"`). Guidebook: `erp-main-v11/docs/handover/05-APPROVAL-MATRIX.md`.
 
+## v0.2.7 - 2026-10-11
+- Fix: `ModuleSwitch::moduleOf()` resolved the module with a dotted config path, so a document type whose prefix is not its module (erp-pmd `tender.*` -> module `pmd`) fell back to the prefix and ignored the module switch. Also fixes the label in the document-switch toast.
+
 ## v0.2.6 - 2026-10-11
 - **Document-type ("workflow") on/off switch.** New table `approval_document_settings`; dashboard card "Workflows on / off" (`POST approval-matrix/documents/{type}`, `approval-matrix-edit`) with On / Off / Not set per document type. An explicit setting beats the consuming app's `.env` mode; "Not set" lets the app decide. The resolver returns nothing for a document type switched off.
 - `ModuleSwitch::active($documentType, $appDefault)` is the one call for apps that have their own mode: module on AND (dashboard setting ?? app default). erp-pms (`*_MODE`) and erp-pmd (`TENDER_*_MODE`) use it. Run `php artisan migrate` in erp-main.

@@ -149,4 +149,18 @@ class ModuleSwitchTest extends ApprovalTestCase
         $this->actingAs($viewer)->postJson($url('procurement.cs'), ['state' => 'on'])->assertForbidden();
         $this->actingAs($viewer)->get(route('approval-matrix.workflows.index'))->assertOk()->assertSee('data-doc="procurement.cs"', false);
     }
+
+    public function test_module_of_uses_the_configured_module_not_the_type_prefix(): void
+    {
+        // host apps add types at runtime whose prefix is not their module (erp-pmd: tender.* belongs to module pmd)
+        config(['approvalmatrix.document_types' => config('approvalmatrix.document_types') + [
+            'tender.go_no_go' => ['module' => 'pmd', 'label' => 'Tender Go / No-Go'],
+        ]]);
+        $switch = app(ModuleSwitch::class);
+
+        $this->assertSame('pmd', $switch->moduleOf('tender.go_no_go'));
+        $switch->set('pmd', false);
+        $this->assertFalse($switch->active('tender.go_no_go', true));
+        $this->assertTrue($switch->active(self::DOC_TYPE, true), 'other modules are unaffected');
+    }
 }

@@ -51,7 +51,8 @@ class ModuleSwitch
     /** the module a document type belongs to: config `module`, else the part before the first dot */
     public function moduleOf(string $documentType): string
     {
-        return config("approvalmatrix.document_types.{$documentType}.module") ?? explode('.', $documentType)[0];
+        // not config("...document_types.{$type}.module"): the type itself contains a dot (tender.go_no_go) and would be split into a path
+        return config('approvalmatrix.document_types', [])[$documentType]['module'] ?? explode('.', $documentType)[0];
     }
 
     /** @return array<string,bool> every configured module => enabled */

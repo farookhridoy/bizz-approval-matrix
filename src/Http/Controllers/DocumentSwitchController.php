@@ -17,7 +17,7 @@ class DocumentSwitchController extends Controller
         $state = $request->validate(['state' => 'required|in:on,off,default'])['state'];
         $switch->setDocument($documentType, ['on' => true, 'off' => false, 'default' => null][$state], auth()->id());
 
-        $label = config("approvalmatrix.document_types.{$documentType}.label", $documentType);
+        $label = config('approvalmatrix.document_types', [])[$documentType]['label'] ?? $documentType;
 
         return response()->json([
             'success' => true,
