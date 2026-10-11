@@ -64,7 +64,7 @@ class ApprovalSimulator
         }
 
         if (! app(ModuleSwitch::class)->isEnabledFor($input['document_type'])) {
-            $warnings[] = 'The approval matrix is switched OFF for this module, so real requests use the legacy flow whatever workflows exist.';
+            $warnings[] = 'The approval matrix is switched OFF for this module or document type (ACL > Approval Matrix), so real requests use the legacy flow whatever workflows exist.';
         }
 
         if (! $workflow) {

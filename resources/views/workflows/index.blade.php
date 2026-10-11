@@ -13,6 +13,7 @@
         .am-mod.busy{opacity:.6;pointer-events:none}
         .am-mod-name{font-weight:600}
         .am-mod-meta{grid-column:1;font-size:12px;color:var(--am-muted)}
+        .am-doc-table small{margin-left:6px}.am-doc-off{opacity:.55}
         .am-mod-toggle{grid-column:2;grid-row:1 / span 2;width:18px;height:18px;cursor:pointer}
     </style>
 @endsection
@@ -58,6 +59,35 @@
                                     <input type="checkbox" class="am-mod-toggle" value="{{ $m }}" @checked($on) @cannot('approval-matrix-edit') disabled @endcannot>
                                 </label>
                             @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <div class="am-card" id="am-documents">
+                    <div class="am-card-b">
+                        <div class="am-modules-head"><b>Workflows on / off</b>
+                            <span class="am-muted am-small">Per document type. <strong>On</strong> / <strong>Off</strong> is a decision made here and beats the app's <code>.env</code> mode; <strong>Not set</strong> lets each app's own <code>.env</code> mode decide (default off). A module switched off above overrides everything below it.</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm am-doc-table">
+                                <thead><tr><th>Document</th><th>Module</th><th class="text-center">Active workflows</th><th style="width:200px">Matrix</th></tr></thead>
+                                <tbody>
+                                @foreach ($documentRows as $d)
+                                    <tr data-doc="{{ $d['type'] }}" class="{{ $d['module_on'] ? '' : 'am-doc-off' }}">
+                                        <td>{{ $d['label'] }} <small class="am-muted">{{ $d['type'] }}</small></td>
+                                        <td>{{ ucfirst($d['module']) }} @unless ($d['module_on'])<span class="am-chip bad">module off</span>@endunless</td>
+                                        <td class="text-center">{{ $d['active'] }}</td>
+                                        <td>
+                                            <select class="form-control form-control-sm am-doc-state" @cannot('approval-matrix-edit') disabled @endcannot>
+                                                <option value="default" @selected($d['setting'] === 'default')>Not set (app .env decides)</option>
+                                                <option value="on" @selected($d['setting'] === 'on')>On</option>
+                                                <option value="off" @selected($d['setting'] === 'off')>Off</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -126,6 +156,13 @@
                     })
                     .always(function () { card.removeClass('busy'); });
             });
+            $('#am-documents').on('focus', '.am-doc-state', function () { $(this).data('prev', $(this).val()); })
+                .on('change', '.am-doc-state', function () {
+                    var sel = $(this), row = sel.closest('tr'), state = sel.val(), prev = sel.data('prev');
+                    $.post('{{ url('approval-matrix/documents') }}/' + encodeURIComponent(row.data('doc')), {state: state})
+                        .done(function (res) { sel.data('prev', state); if (window.toastr) toastr.success(res.message); })
+                        .fail(function (xhr) { sel.val(prev); if (window.toastr) toastr.error((xhr.responseJSON && xhr.responseJSON.message) || 'Could not change the setting.'); });
+                });
             $('#f-module').on('change', reload);
             $('#am-state-filter').on('click', '.am-stat', function (e) {
                 e.preventDefault();

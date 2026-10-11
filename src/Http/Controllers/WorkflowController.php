@@ -43,10 +43,27 @@ class WorkflowController extends Controller
             'title' => 'Approval Workflows',
             'headerColumns' => $this->headerColumns(),
             'modules' => config('approvalmatrix.modules'),
+            'documentRows' => $this->documentRows(),
             'moduleSwitch' => app(\Bizzsol\ApprovalMatrix\Services\ModuleSwitch::class)->all(),
             'activeByModule' => ApprovalWorkflow::where('state', ApprovalWorkflow::STATE_ACTIVE)->where('status', 1)->selectRaw('module, count(*) c')->groupBy('module')->pluck('c', 'module'),
             'counts' => ['all' => $counts->sum(), 'active' => $counts['active'] ?? 0, 'draft' => $counts['draft'] ?? 0, 'archived' => $counts['archived'] ?? 0],
         ]);
+    }
+
+    /** one row per approvable document type for the "Workflows on/off" card */
+    private function documentRows(): array
+    {
+        $switch = app(\Bizzsol\ApprovalMatrix\Services\ModuleSwitch::class);
+        $active = ApprovalWorkflow::where('state', ApprovalWorkflow::STATE_ACTIVE)->where('status', 1)->selectRaw('document_type, count(*) c')->groupBy('document_type')->pluck('c', 'document_type');
+
+        return collect(config('approvalmatrix.document_types', []))->map(fn ($d, $type) => [
+            'type' => $type,
+            'label' => $d['label'] ?? $type,
+            'module' => $d['module'],
+            'module_on' => $switch->isEnabled($d['module']),
+            'setting' => $switch->documentSetting($type) === null ? 'default' : ($switch->documentSetting($type) ? 'on' : 'off'),
+            'active' => (int) ($active[$type] ?? 0),
+        ])->sortBy([['module', 'asc'], ['label', 'asc']])->values()->all();
     }
 
     private function table(Request $request)

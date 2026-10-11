@@ -90,4 +90,63 @@ class ModuleSwitchTest extends ApprovalTestCase
             $page->assertSee('data-module="'.$m.'"', false);
         }
     }
+
+    public function test_document_switch_overrides_the_app_default_and_the_resolver(): void
+    {
+        $switch = app(ModuleSwitch::class);
+        $wf = $this->makeWorkflow($this->steps(), ['name' => 'req']);
+        $resolver = app(WorkflowResolver::class);
+
+        // not set: the app's own default decides
+        $this->assertNull($switch->documentSetting(self::DOC_TYPE));
+        $this->assertFalse($switch->active(self::DOC_TYPE, false));
+        $this->assertTrue($switch->active(self::DOC_TYPE, true));
+        $this->assertSame($wf->id, $resolver->resolve(self::DOC_TYPE, [])->id);
+
+        // explicit on beats an app default of off
+        $switch->setDocument(self::DOC_TYPE, true);
+        $this->assertTrue($switch->active(self::DOC_TYPE, false));
+
+        // explicit off beats an app default of matrix, and the resolver returns nothing
+        $switch->setDocument(self::DOC_TYPE, false);
+        $this->assertFalse($switch->active(self::DOC_TYPE, true));
+        $this->assertNull($resolver->resolve(self::DOC_TYPE, []));
+        $this->assertTrue($switch->isEnabledFor('inventory.adjustment'), 'other document types are unaffected');
+
+        // back to not set
+        $switch->setDocument(self::DOC_TYPE, null);
+        $this->assertNull($switch->documentSetting(self::DOC_TYPE));
+        $this->assertSame($wf->id, $resolver->resolve(self::DOC_TYPE, [])->id);
+    }
+
+    public function test_module_off_beats_an_explicit_document_on(): void
+    {
+        $switch = app(ModuleSwitch::class);
+        $switch->setDocument(self::DOC_TYPE, true);
+        $switch->set('procurement', false);
+
+        $this->assertFalse($switch->active(self::DOC_TYPE, true));
+        $this->assertFalse($switch->isEnabledFor(self::DOC_TYPE));
+    }
+
+    public function test_document_endpoint(): void
+    {
+        $editor = $this->userWith(['approval-matrix-index', 'approval-matrix-edit']);
+        $url = fn ($t) => route('approval-matrix.documents.update', $t);
+        $switch = app(ModuleSwitch::class);
+
+        $this->actingAs($editor)->postJson($url('procurement.cs'), ['state' => 'on'])->assertOk()->assertJson(['state' => 'on']);
+        $this->assertTrue($switch->documentSetting('procurement.cs'));
+        $this->actingAs($editor)->postJson($url('procurement.cs'), ['state' => 'off'])->assertOk();
+        $this->assertFalse($switch->documentSetting('procurement.cs'));
+        $this->actingAs($editor)->postJson($url('procurement.cs'), ['state' => 'default'])->assertOk();
+        $this->assertNull($switch->documentSetting('procurement.cs'));
+
+        $this->actingAs($editor)->postJson($url('procurement.cs'), ['state' => 'bogus'])->assertStatus(422);
+        $this->actingAs($editor)->postJson($url('nope.nothing'), ['state' => 'on'])->assertNotFound();
+
+        $viewer = $this->userWith(['approval-matrix-index']);
+        $this->actingAs($viewer)->postJson($url('procurement.cs'), ['state' => 'on'])->assertForbidden();
+        $this->actingAs($viewer)->get(route('approval-matrix.workflows.index'))->assertOk()->assertSee('data-doc="procurement.cs"', false);
+    }
 }
