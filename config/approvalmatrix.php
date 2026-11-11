@@ -42,5 +42,6 @@ return [
         'procurement.po_advance' => ['module' => 'procurement', 'label' => 'PO Advance Audit', 'allow_finish' => false],
         'inventory.adjustment' => ['module' => 'inventory', 'label' => 'Inventory Adjustment', 'allow_finish' => false],
         'inventory.stock_movement' => ['module' => 'inventory', 'label' => 'Stock Movement Request', 'allow_finish' => false, 'allow_edit' => true],
+        'quality.adaptation_report' => ['module' => 'inventory', 'label' => 'Adaptation Report (Quality)', 'allow_finish' => false],
     ],
 ];

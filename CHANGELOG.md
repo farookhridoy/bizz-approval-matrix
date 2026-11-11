@@ -2,6 +2,9 @@
 
 Consumers: erp-main (owns schema + admin screens), erp-pms (services + inbox) (`"bizzsol/approval-matrix": "^0.2"`). Guidebook: `erp-main-v11/docs/handover/05-APPROVAL-MATRIX.md`.
 
+## v0.2.9 - 2026-11-11
+- New document type `quality.adaptation_report` (Adaptation Report, module inventory, `allow_finish` false): one approval step per signature box of the report (Product Quality, Line Manager, R&D, Production, Supply Chain).
+
 ## v0.2.8 - 2026-11-11
 - **Step option "Approver may edit" (`approval_steps.can_edit`, default off).** Unticked = the approver only checks and approves / rejects; ticked = they may also correct the document while deciding. Only document types that declare `allow_edit => true` in `config/approvalmatrix.php` accept it (the builder rejects it elsewhere). The flag is copied into the request's `steps_snapshot`; `ApprovalEngine::mayEdit($request, $userId)` tells the host app whether the person may edit now. The host app supplies the edit screen and decides what is editable.
 - New document type `inventory.stock_movement` (Stock Movement Request, `allow_finish` false, `allow_edit` true).
