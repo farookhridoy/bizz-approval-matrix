@@ -220,7 +220,9 @@
                 <div class="col-md-2"><label>&nbsp;</label><div class="checkbox"><label><input type="checkbox" value="1" data-f="is_mandatory" checked> Mandatory</label></div>
                     <small class="text-muted">Optional steps are skipped when nobody can be found.</small>
                     <div class="checkbox"><label><input type="checkbox" value="1" data-f="can_finish"> Approver may finish here</label></div>
-                    <small class="text-muted">“Acknowledge” completes the request; “Send to next” continues to the following steps.</small></div>
+                    <small class="text-muted">“Acknowledge” completes the request; “Send to next” continues to the following steps.</small>
+                    <div class="checkbox"><label><input type="checkbox" value="1" data-f="can_edit"> Approver may edit</label></div>
+                    <small class="text-muted">Unticked = the approver only checks, then approves or rejects. Ticked = they may also correct the document (e.g. quantities) before deciding. Only for document types that have an edit screen.</small></div>
             </div>
         </div>
     </div>
@@ -272,6 +274,7 @@ $(function () {
         if (m === 'all') bits.push('all must approve');
         if (m === 'n_of_m') bits.push($s.find('[data-f=min_approvals]').val() + ' of group');
         if ($s.find('[data-f=can_finish]').prop('checked')) bits.push('can finish');
+        if ($s.find('[data-f=can_edit]').prop('checked')) bits.push('can edit');
         if (!$s.find('[data-f=is_mandatory]').prop('checked')) bits.push('optional');
         $s.find('.step-sum').text(bits.join(' · '));
     }
@@ -322,6 +325,7 @@ $(function () {
         $s.find('[data-f=on_reject]').val(data.on_reject || 'terminate');
         $s.find('[data-f=is_mandatory]').prop('checked', data.is_mandatory === undefined ? true : !!parseInt(data.is_mandatory));
         $s.find('[data-f=can_finish]').prop('checked', !!parseInt(data.can_finish || 0));
+        $s.find('[data-f=can_edit]').prop('checked', !!parseInt(data.can_edit || 0));
         $s.find('[data-f=user_id]').val(data.user_id || '');
         if (type === 'reporting_head') $s.find('[data-f=approver_ref_hops]').val(data.approver_ref || 1);
         if (type === 'role') $s.find('[data-f=approver_ref_role]').val(data.approver_ref || '');

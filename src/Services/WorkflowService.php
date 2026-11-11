@@ -215,7 +215,7 @@ class WorkflowService
         return $c ?: null;
     }
 
-    /** @param  array  $docType  config entry; optional rules: `modes` (allowed step modes), `allow_finish` (false forbids can_finish) */
+    /** @param  array  $docType  config entry; optional rules: `modes` (allowed step modes), `allow_finish` (false forbids can_finish), `allow_edit` (true lets a step's approver edit the document; false/absent forbids can_edit) */
     private function validatedSteps(array $rows, array $docType = []): array
     {
         $rows = array_values(array_filter($rows, fn ($r) => ! empty($r['approver_type'])));
@@ -234,6 +234,9 @@ class WorkflowService
             }
             if (($docType['allow_finish'] ?? true) === false && ! empty($r['can_finish'])) {
                 $fail('"Approver may finish here" is not available for this document type.');
+            }
+            if (($docType['allow_edit'] ?? false) !== true && ! empty($r['can_edit'])) {
+                $fail('"Approver may edit" is not available for this document type (it has no edit screen for approvers).');
             }
             if (! isset(self::APPROVER_TYPES[$type])) {
                 $fail('unknown approver type.');
@@ -300,6 +303,7 @@ class WorkflowService
                 'min_approvals' => ($r['mode'] ?? 'any') === 'n_of_m' ? (int) $r['min_approvals'] : null,
                 'is_mandatory' => ! empty($r['is_mandatory']) ? 1 : 0,
                 'can_finish' => ! empty($r['can_finish']) ? 1 : 0,
+                'can_edit' => ! empty($r['can_edit']) ? 1 : 0,
                 'skip_condition' => $skip,
                 'sla_hours' => ! empty($r['sla_hours']) ? (int) $r['sla_hours'] : null,
                 'on_reject' => $r['on_reject'] ?? 'terminate',

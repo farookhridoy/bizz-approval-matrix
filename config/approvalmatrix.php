@@ -41,5 +41,6 @@ return [
         // Advance payment of a PO checked by audit before accounts releases it. No early finish.
         'procurement.po_advance' => ['module' => 'procurement', 'label' => 'PO Advance Audit', 'allow_finish' => false],
         'inventory.adjustment' => ['module' => 'inventory', 'label' => 'Inventory Adjustment', 'allow_finish' => false],
+        'inventory.stock_movement' => ['module' => 'inventory', 'label' => 'Stock Movement Request', 'allow_finish' => false, 'allow_edit' => true],
     ],
 ];

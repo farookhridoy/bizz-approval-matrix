@@ -105,6 +105,7 @@ class ApprovalEngine
                     'min_approvals' => $s->min_approvals,
                     'is_mandatory' => (bool) $s->is_mandatory,
                     'can_finish' => (bool) $s->can_finish,
+                    'can_edit' => (bool) ($s->can_edit ?? false),
                     'sla_hours' => $s->sla_hours,
                     'skip_condition' => $s->skip_condition,
                     'on_reject' => $s->on_reject,
@@ -206,6 +207,15 @@ class ApprovalEngine
         return $request->status === ApprovalRequest::PENDING
             && $request->actions()->where('level', $request->current_level)->where('action', ApprovalAction::PENDING)
                 ->whereIn('assigned_to', $this->assigneeIdsFor($userId, $request->document_type))->exists();
+    }
+
+    /**
+     * May $userId edit the document right now? True only for a person (or delegate) the open request is waiting on, at a step
+     * flagged `can_edit`. Otherwise they can only check it and approve / reject. The host app still decides WHAT is editable.
+     */
+    public function mayEdit(ApprovalRequest $request, int $userId): bool
+    {
+        return $this->isAssigned($request, $userId) && ! empty($request->stepAt((int) $request->current_level)['can_edit']);
     }
 
     /**

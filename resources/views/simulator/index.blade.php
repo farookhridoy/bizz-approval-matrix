@@ -81,6 +81,7 @@
                                         <div class="am-step-title">{{ $s['name'] }}
                                             @unless($s['mandatory'])<span class="am-chip muted">optional</span>@endunless
                                             @if($s['can_finish'])<span class="am-chip info">can finish</span>@endif
+                                            @if($s['can_edit'] ?? false)<span class="am-chip info">can edit</span>@endif
                                             @switch($s['status'])
                                                 @case('applies')<span class="am-state approved">Approval needed</span>@break
                                                 @case('skipped')<span class="am-state skipped">Skipped</span>@break

@@ -2,6 +2,11 @@
 
 Consumers: erp-main (owns schema + admin screens), erp-pms (services + inbox) (`"bizzsol/approval-matrix": "^0.2"`). Guidebook: `erp-main-v11/docs/handover/05-APPROVAL-MATRIX.md`.
 
+## v0.2.8 - 2026-11-11
+- **Step option "Approver may edit" (`approval_steps.can_edit`, default off).** Unticked = the approver only checks and approves / rejects; ticked = they may also correct the document while deciding. Only document types that declare `allow_edit => true` in `config/approvalmatrix.php` accept it (the builder rejects it elsewhere). The flag is copied into the request's `steps_snapshot`; `ApprovalEngine::mayEdit($request, $userId)` tells the host app whether the person may edit now. The host app supplies the edit screen and decides what is editable.
+- New document type `inventory.stock_movement` (Stock Movement Request, `allow_finish` false, `allow_edit` true).
+- Run `php artisan migrate` in erp-main (adds `approval_steps.can_edit`). Hosts that run before the migration treat a missing flag as "cannot edit".
+
 ## v0.2.7 - 2026-10-11
 - Fix: `ModuleSwitch::moduleOf()` resolved the module with a dotted config path, so a document type whose prefix is not its module (erp-pmd `tender.*` -> module `pmd`) fell back to the prefix and ignored the module switch. Also fixes the label in the document-switch toast.
 
@@ -26,4 +31,3 @@ Consumers: erp-main (owns schema + admin screens), erp-pms (services + inbox) (`
 ## Notes for integrators
 - The engine keeps **one pending request per approvable (model class + id)**. Two document types on the same row need two model classes (see pms `SpotPriceApproval extends PurchaseOrderAttachment`).
 - Adding a document type = a line in `config/approvalmatrix.php` `document_types` + a test + a patch tag; see guidebook page 05 for the full recipe.
-- The package `main` branch contains everything above but is not pushed to GitHub yet (tags are).
