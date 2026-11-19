@@ -42,6 +42,8 @@ return [
         'procurement.po_advance' => ['module' => 'procurement', 'label' => 'PO Advance Audit', 'allow_finish' => false],
         'inventory.adjustment' => ['module' => 'inventory', 'label' => 'Inventory Adjustment', 'allow_finish' => false],
         'inventory.stock_movement' => ['module' => 'inventory', 'label' => 'Stock Movement Request', 'allow_finish' => false, 'allow_edit' => true],
+        // Sub-Contract change of process (CR-23, erp-pms docs/10-Sub-Contract/09): the last approval applies the change, so no early finish.
+        'production.subcontract_line_change' => ['module' => 'production', 'label' => 'Sub-Contract Change of Process', 'allow_finish' => false],
         'quality.adaptation_report' => ['module' => 'inventory', 'label' => 'Adaptation Report (Quality)', 'allow_finish' => false],
     ],
 ];
